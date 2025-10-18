@@ -172,7 +172,7 @@
             app:layout_constraintTop_toBottomOf="@+id/uploadCard" />
 
         <!-- Upload Progress -->
-        <ProgressBar
+        <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/uploadProgress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -209,7 +209,12 @@
     android:layout_height="wrap_content"
     android:background="#FFFFFF"
     android:elevation="8dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
     app:menu="@menu/bottom_navigation"
+    app:itemIconTint="@color/nav_item_color"
+    app:itemTextColor="@color/nav_item_color"
+    app:itemActiveIndicatorStyle="@style/ActiveIndicator"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent" />

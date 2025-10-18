@@ -80,18 +80,22 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_home -> {
                     showHomeFragment()
+                    updateProfileIcon(false)
                     true
                 }
                 R.id.nav_projects -> {
                     showProjectsFragment()
+                    updateProfileIcon(false)
                     true
                 }
                 R.id.nav_messages -> {
                     showMessagesFragment()
+                    updateProfileIcon(false)
                     true
                 }
                 R.id.nav_profile -> {
                     showProfileFragment()
+                    updateProfileIcon(true)
                     true
                 }
                 else -> false
@@ -101,7 +105,13 @@ class MainActivity : AppCompatActivity() {
         // Set default selection after a short delay to ensure navigation is ready
         bottomNavigation.post {
             bottomNavigation.selectedItemId = R.id.nav_projects
+            updateProfileIcon(false)
         }
+    }
+    
+    private fun updateProfileIcon(isActive: Boolean) {
+        val profileItem = bottomNavigation.menu.findItem(R.id.nav_profile)
+        profileItem?.setIcon(if (isActive) R.drawable.ic_profile_filled else R.drawable.ic_profile)
     }
     
     private fun openFilePicker() {
