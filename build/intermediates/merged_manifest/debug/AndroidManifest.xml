@@ -37,6 +37,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.strathtank.app.ProjectExploreActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StrathTank" />
+        <activity
+            android:name="com.strathtank.app.ProjectDetailsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StrathTank" />
+        <activity
+            android:name="com.strathtank.app.HomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StrathTank" />
+        <activity
+            android:name="com.strathtank.app.MessagesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StrathTank" />
+        <activity
+            android:name="com.strathtank.app.ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StrathTank" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

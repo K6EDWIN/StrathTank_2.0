@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-24:12
-INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-24:12
-INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-24:12
-INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-24:12
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-49:12
+INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-49:12
+INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-49:12
+INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:1-49:12
 MERGED from [com.google.android.material:material:1.10.0] C:\Users\sharo\.gradle\caches\transforms-3\2d8edfc209e4ab65f141e6d058181d46\transformed\material-1.10.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\sharo\.gradle\caches\transforms-3\9ec1ac9ae84bb4e1b2c41a15ebb65c2d\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\sharo\.gradle\caches\transforms-3\ee8eb848c5330bef157da8af9750dcb7\transformed\appcompat-resources-1.6.1\AndroidManifest.xml:17:1-22:12
@@ -79,8 +79,8 @@ MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] C:\Users\sha
 	xmlns:android
 		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:2:11-69
 application
-ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:5:5-22:19
-INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:5:5-22:19
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:5:5-47:19
+INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:5:5-47:19
 MERGED from [com.google.android.material:material:1.10.0] C:\Users\sharo\.gradle\caches\transforms-3\2d8edfc209e4ab65f141e6d058181d46\transformed\material-1.10.0\AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.10.0] C:\Users\sharo\.gradle\caches\transforms-3\2d8edfc209e4ab65f141e6d058181d46\transformed\material-1.10.0\AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\sharo\.gradle\caches\transforms-3\9ec1ac9ae84bb4e1b2c41a15ebb65c2d\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -157,6 +157,46 @@ category#android.intent.category.LAUNCHER
 ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:19:17-77
 	android:name
 		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:19:27-74
+activity#com.strathtank.app.ProjectExploreActivity
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:23:9-26:55
+	android:exported
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:25:13-37
+	android:theme
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:26:13-52
+	android:name
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:24:13-51
+activity#com.strathtank.app.ProjectDetailsActivity
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:28:9-31:55
+	android:exported
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:30:13-37
+	android:theme
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:31:13-52
+	android:name
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:29:13-51
+activity#com.strathtank.app.HomeActivity
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:33:9-36:55
+	android:exported
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:35:13-37
+	android:theme
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:36:13-52
+	android:name
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:34:13-41
+activity#com.strathtank.app.MessagesActivity
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:38:9-41:55
+	android:exported
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:40:13-37
+	android:theme
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:41:13-52
+	android:name
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:39:13-45
+activity#com.strathtank.app.ProfileActivity
+ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:43:9-46:55
+	android:exported
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:45:13-37
+	android:theme
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:46:13-52
+	android:name
+		ADDED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml:44:13-44
 uses-sdk
 INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\AndroidManifest.xml

@@ -2988,6 +2988,7 @@ drawable btn_radio_off_mtrl
 drawable btn_radio_off_to_on_mtrl_animation
 drawable btn_radio_on_mtrl
 drawable btn_radio_on_to_off_mtrl_animation
+drawable circle_dot
 drawable common_full_open_on_phone
 drawable common_google_signin_btn_icon_dark
 drawable common_google_signin_btn_icon_dark_focused
@@ -3014,6 +3015,7 @@ drawable design_password_eye
 drawable design_snackbar_background
 drawable googleg_disabled_color_18
 drawable googleg_standard_color_18
+drawable ic_add
 drawable ic_arrow_back_black_24
 drawable ic_call_answer
 drawable ic_call_answer_low
@@ -3023,10 +3025,12 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
+drawable ic_favorite
 drawable ic_file
 drawable ic_home
 drawable ic_home_filled
 drawable ic_keyboard_black_24dp
+drawable ic_link
 drawable ic_m3_chip_check
 drawable ic_m3_chip_checked_circle
 drawable ic_m3_chip_close
@@ -3040,7 +3044,9 @@ drawable ic_profile
 drawable ic_profile_filled
 drawable ic_projects
 drawable ic_projects_filled
+drawable ic_search
 drawable ic_search_black_24
+drawable ic_share
 drawable ic_upload
 drawable m3_appbar_background
 drawable m3_avd_hide_password
@@ -3166,6 +3172,7 @@ id accessibility_custom_action_6
 id accessibility_custom_action_7
 id accessibility_custom_action_8
 id accessibility_custom_action_9
+id actionButtons
 id actionDown
 id actionDownUp
 id actionUp
@@ -3203,6 +3210,7 @@ id anticipate
 id arc
 id asConfigured
 id async
+id authorCategoryRow
 id auto
 id autoComplete
 id autoCompleteToEnd
@@ -3253,6 +3261,7 @@ id constraint
 id container
 id content
 id contentPanel
+id contentText
 id contiguous
 id continuousVelocity
 id coordinator
@@ -3311,6 +3320,7 @@ id enterAlwaysCollapsed
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
+id fabUpload
 id fade
 id fileInfo
 id fileName
@@ -3319,6 +3329,8 @@ id fill
 id fill_horizontal
 id fill_vertical
 id filled
+id filterChipGroup
+id filterLabel
 id fitCenter
 id fitEnd
 id fitStart
@@ -3360,6 +3372,7 @@ id immediateStop
 id included
 id indeterminate
 id info
+id infoCard
 id invisible
 id inward
 id is_pooling_container_tag
@@ -3373,9 +3386,15 @@ id left
 id leftToRight
 id legacy
 id light
+id likeButton
 id line1
 id line3
 id linear
+id linkButton
+id linkCard
+id linkEditText
+id linkIcon
+id linkInputLayout
 id listMode
 id list_item
 id m3_side_sheet
@@ -3499,6 +3518,17 @@ id postLayout
 id pressed
 id progress_circular
 id progress_horizontal
+id projectAuthor
+id projectCard
+id projectCategory
+id projectDate
+id projectDescription
+id projectLikes
+id projectTags
+id projectTitle
+id projectViews
+id projectsCount
+id projectsRecyclerView
 id radio
 id ratio
 id rectangles
@@ -3521,6 +3551,8 @@ id scrollIndicatorDown
 id scrollIndicatorUp
 id scrollView
 id scrollable
+id searchEditText
+id searchInputLayout
 id search_badge
 id search_bar
 id search_button
@@ -3534,6 +3566,7 @@ id search_voice_btn
 id select_dialog_listview
 id selected
 id selection_type
+id shareButton
 id sharedValueSet
 id sharedValueUnset
 id shortcut
@@ -3567,6 +3600,8 @@ id startToEnd
 id startVertical
 id staticLayout
 id staticPostLayout
+id statsCard
+id statsRow
 id stop
 id stretch
 id submenuarrow
@@ -3764,7 +3799,12 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_home
 layout activity_main
+layout activity_messages
+layout activity_profile
+layout activity_project_details
+layout activity_project_explore
 layout browser_actions_context_menu_page
 layout browser_actions_context_menu_row
 layout custom_dialog
@@ -3786,6 +3826,7 @@ layout design_text_input_start_icon
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
 layout item_file
+layout item_project
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
 layout m3_alert_dialog_title

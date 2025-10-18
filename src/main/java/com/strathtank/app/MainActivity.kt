@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var titleEditText: TextInputEditText
     private lateinit var descriptionEditText: TextInputEditText
+    private lateinit var linkEditText: TextInputEditText
     private lateinit var uploadCard: MaterialCardView
     private lateinit var uploadButton: MaterialButton
     private lateinit var uploadProgress: CircularProgressIndicator
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         titleEditText = findViewById(R.id.titleEditText)
         descriptionEditText = findViewById(R.id.descriptionEditText)
+        linkEditText = findViewById(R.id.linkEditText)
         uploadCard = findViewById(R.id.uploadCard)
         uploadButton = findViewById(R.id.uploadButton)
         uploadProgress = findViewById(R.id.uploadProgress)
@@ -63,6 +65,11 @@ class MainActivity : AppCompatActivity() {
         uploadButton.setOnClickListener {
             uploadProject()
         }
+        
+        // Add text change listeners to update upload button state
+        titleEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
+        descriptionEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
+        linkEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
     }
     
     private fun setupRecyclerView() {
@@ -155,8 +162,9 @@ class MainActivity : AppCompatActivity() {
         val hasTitle = titleEditText.text?.isNotBlank() == true
         val hasDescription = descriptionEditText.text?.isNotBlank() == true
         val hasFiles = selectedFiles.isNotEmpty()
+        val hasLink = linkEditText.text?.isNotBlank() == true
         
-        uploadButton.isEnabled = hasTitle && hasDescription && hasFiles
+        uploadButton.isEnabled = hasTitle && hasDescription && (hasFiles || hasLink)
         uploadButton.alpha = if (uploadButton.isEnabled) 1.0f else 0.6f
     }
     
@@ -167,14 +175,15 @@ class MainActivity : AppCompatActivity() {
     private fun uploadProject() {
         val title = titleEditText.text?.toString()?.trim()
         val description = descriptionEditText.text?.toString()?.trim()
+        val link = linkEditText.text?.toString()?.trim()
         
         if (title.isNullOrBlank() || description.isNullOrBlank()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
             return
         }
         
-        if (selectedFiles.isEmpty()) {
-            Toast.makeText(this, "Please select at least one file", Toast.LENGTH_SHORT).show()
+        if (selectedFiles.isEmpty() && link.isNullOrBlank()) {
+            Toast.makeText(this, "Please provide either files or a project link", Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -184,10 +193,10 @@ class MainActivity : AppCompatActivity() {
         uploadButton.text = "Uploading..."
         
         // Simulate upload process
-        simulateUpload(title, description)
+        simulateUpload(title, description, link)
     }
     
-    private fun simulateUpload(title: String, description: String) {
+    private fun simulateUpload(title: String, description: String, link: String?) {
         // This is a simulation - in real app, you would upload to Firebase here
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             uploadProgress.visibility = View.GONE
@@ -195,7 +204,12 @@ class MainActivity : AppCompatActivity() {
             uploadButton.text = "Upload Project"
             
             // Show success message
-            Toast.makeText(this, "Project uploaded successfully!", Toast.LENGTH_LONG).show()
+            val message = if (link != null) {
+                "Project with link uploaded successfully!"
+            } else {
+                "Project uploaded successfully!"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             
             // Clear form
             clearForm()
@@ -205,6 +219,7 @@ class MainActivity : AppCompatActivity() {
     private fun clearForm() {
         titleEditText.text?.clear()
         descriptionEditText.text?.clear()
+        linkEditText.text?.clear()
         selectedFiles.clear()
         filesAdapter.notifyDataSetChanged()
         updateUploadButtonState()
@@ -212,20 +227,24 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showHomeFragment() {
-        Toast.makeText(this, "Home - Coming Soon!", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, HomeActivity::class.java)
+        startActivity(intent)
     }
     
     private fun showProjectsFragment() {
-        // This is the current project upload view - already visible
-        Toast.makeText(this, "Projects - Upload your projects here", Toast.LENGTH_SHORT).show()
+        // Navigate to Project Explore Activity
+        val intent = Intent(this, ProjectExploreActivity::class.java)
+        startActivity(intent)
     }
     
     private fun showMessagesFragment() {
-        Toast.makeText(this, "Messages - Coming Soon!", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, MessagesActivity::class.java)
+        startActivity(intent)
     }
     
     private fun showProfileFragment() {
-        Toast.makeText(this, "Profile - Coming Soon!", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, ProfileActivity::class.java)
+        startActivity(intent)
     }
 }
 
