@@ -28,6 +28,12 @@
             height: 100%;
             background: #fff;
             border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
             overflow-y: auto;
             padding: 24px;
             box-sizing: border-box;
@@ -158,36 +164,87 @@
         .hidden {
             display: none;
         }
+        .bottom-nav {
+            display: flex;
+            background: #fff;
+            border-top: 1px solid #E0E0E0;
+            padding: 8px 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .nav-item.active {
+            color: #1976D2;
+        }
+        .nav-item:not(.active) {
+            color: #9E9E9E;
+        }
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        .nav-text {
+            font-size: 12px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="status">Project Upload Module</div>
     <div class="phone">
         <div class="screen">
-            <div class="header">
-                <div class="title">Project Upload</div>
-                <div class="subtitle">Share your project with the community</div>
-            </div>
-            
-            <div class="form-group">
-                <input type="text" class="input" placeholder="Project Title" id="projectTitle">
-            </div>
-            
-            <div class="form-group">
-                <textarea class="input textarea" placeholder="Project Description" id="projectDescription"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label class="label">Project Media</label>
-                <div class="upload-area" onclick="selectFiles()">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">Tap to upload files</div>
-                    <div class="upload-info">Images, videos, documents</div>
+            <div class="content">
+                <div class="header">
+                    <div class="title">Project Upload</div>
+                    <div class="subtitle">Share your project with the community</div>
                 </div>
-                <div id="filesList" class="hidden"></div>
+                
+                <div class="form-group">
+                    <input type="text" class="input" placeholder="Project Title" id="projectTitle">
+                </div>
+                
+                <div class="form-group">
+                    <textarea class="input textarea" placeholder="Project Description" id="projectDescription"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="label">Project Media</label>
+                    <div class="upload-area" onclick="selectFiles()">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Tap to upload files</div>
+                        <div class="upload-info">Images, videos, documents</div>
+                    </div>
+                    <div id="filesList" class="hidden"></div>
+                </div>
+                
+                <button class="upload-btn" id="uploadBtn" onclick="uploadProject()" disabled>Upload Project</button>
             </div>
             
-            <button class="upload-btn" id="uploadBtn" onclick="uploadProject()" disabled>Upload Project</button>
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="switchTab('home')">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-text">Home</div>
+                </div>
+                <div class="nav-item active" onclick="switchTab('projects')">
+                    <div class="nav-icon">💼</div>
+                    <div class="nav-text">Projects</div>
+                </div>
+                <div class="nav-item" onclick="switchTab('messages')">
+                    <div class="nav-icon">💬</div>
+                    <div class="nav-text">Messages</div>
+                </div>
+                <div class="nav-item" onclick="switchTab('profile')">
+                    <div class="nav-icon">👤</div>
+                    <div class="nav-text">Profile</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -247,6 +304,89 @@
                 updateFilesList();
                 updateUploadButton();
             }, 2000);
+        }
+        
+        function switchTab(tab) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Show appropriate content based on tab
+            const content = document.querySelector('.content');
+            switch(tab) {
+                case 'home':
+                    content.innerHTML = `
+                        <div class="header">
+                            <div class="title">Welcome Home</div>
+                            <div class="subtitle">Discover amazing projects</div>
+                        </div>
+                        <div style="text-align: center; padding: 40px 0; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🏠</div>
+                            <div>Home content coming soon!</div>
+                        </div>
+                    `;
+                    break;
+                case 'projects':
+                    // Restore original projects content
+                    content.innerHTML = `
+                        <div class="header">
+                            <div class="title">Project Upload</div>
+                            <div class="subtitle">Share your project with the community</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="text" class="input" placeholder="Project Title" id="projectTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <textarea class="input textarea" placeholder="Project Description" id="projectDescription"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="label">Project Media</label>
+                            <div class="upload-area" onclick="selectFiles()">
+                                <div class="upload-icon">📁</div>
+                                <div class="upload-text">Tap to upload files</div>
+                                <div class="upload-info">Images, videos, documents</div>
+                            </div>
+                            <div id="filesList" class="hidden"></div>
+                        </div>
+                        
+                        <button class="upload-btn" id="uploadBtn" onclick="uploadProject()" disabled>Upload Project</button>
+                    `;
+                    // Re-add event listeners
+                    document.getElementById('projectTitle').addEventListener('input', updateUploadButton);
+                    document.getElementById('projectDescription').addEventListener('input', updateUploadButton);
+                    break;
+                case 'messages':
+                    content.innerHTML = `
+                        <div class="header">
+                            <div class="title">Messages</div>
+                            <div class="subtitle">Stay connected with the community</div>
+                        </div>
+                        <div style="text-align: center; padding: 40px 0; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                            <div>Messages coming soon!</div>
+                        </div>
+                    `;
+                    break;
+                case 'profile':
+                    content.innerHTML = `
+                        <div class="header">
+                            <div class="title">Profile</div>
+                            <div class="subtitle">Manage your account</div>
+                        </div>
+                        <div style="text-align: center; padding: 40px 0; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">👤</div>
+                            <div>Profile settings coming soon!</div>
+                        </div>
+                    `;
+                    break;
+            }
         }
         
         // Add event listeners

@@ -18,6 +18,11 @@
     <color name="text_secondary">#FF757575</color>
     <color name="white">#FFFFFFFF</color>
     <string name="app_name">StrathTank</string>
+    <style name="ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">#E3F2FD</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
+    </style>
     <style name="Theme.StrathTank" parent="Theme.Material3.DayNight">
         
         <item name="colorPrimary">@color/blue_500</item>

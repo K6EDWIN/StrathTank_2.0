@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var uploadButton: MaterialButton
     private lateinit var uploadProgress: CircularProgressIndicator
     private lateinit var filesRecyclerView: RecyclerView
+    private lateinit var bottomNavigation: BottomNavigationView
     
     private val selectedFiles = mutableListOf<Uri>()
     private lateinit var filesAdapter: FilesAdapter
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         initializeViews()
         setupClickListeners()
         setupRecyclerView()
+        setupBottomNavigation()
         updateUploadButtonState()
     }
     
@@ -49,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         uploadButton = findViewById(R.id.uploadButton)
         uploadProgress = findViewById(R.id.uploadProgress)
         filesRecyclerView = findViewById(R.id.filesRecyclerView)
+        bottomNavigation = findViewById(R.id.bottomNavigation)
     }
     
     private fun setupClickListeners() {
@@ -69,6 +73,33 @@ class MainActivity : AppCompatActivity() {
         }
         filesRecyclerView.layoutManager = LinearLayoutManager(this)
         filesRecyclerView.adapter = filesAdapter
+    }
+    
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    showHomeFragment()
+                    true
+                }
+                R.id.nav_projects -> {
+                    showProjectsFragment()
+                    true
+                }
+                R.id.nav_messages -> {
+                    showMessagesFragment()
+                    true
+                }
+                R.id.nav_profile -> {
+                    showProfileFragment()
+                    true
+                }
+                else -> false
+            }
+        }
+        
+        // Set default selection
+        bottomNavigation.selectedItemId = R.id.nav_projects
     }
     
     private fun openFilePicker() {
@@ -166,6 +197,23 @@ class MainActivity : AppCompatActivity() {
         filesAdapter.notifyDataSetChanged()
         updateUploadButtonState()
         updateFilesRecyclerViewVisibility()
+    }
+    
+    private fun showHomeFragment() {
+        Toast.makeText(this, "Home - Coming Soon!", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun showProjectsFragment() {
+        // This is the current project upload view - already visible
+        Toast.makeText(this, "Projects - Upload your projects here", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun showMessagesFragment() {
+        Toast.makeText(this, "Messages - Coming Soon!", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun showProfileFragment() {
+        Toast.makeText(this, "Profile - Coming Soon!", Toast.LENGTH_SHORT).show()
     }
 }
 
