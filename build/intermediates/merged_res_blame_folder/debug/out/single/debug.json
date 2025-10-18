@@ -20,16 +20,16 @@
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_file.xml"
     },
     {
-        "merged": "com.strathtank.app-merged_res-37:/layout_activity_project_explore.xml.flat",
-        "source": "com.strathtank.app-main-39:/layout/activity_project_explore.xml"
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\activity_main.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_projects_filled.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_projects_filled.xml"
     },
     {
-        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_activity_main.xml.flat",
-        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\activity_main.xml"
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_dropdown_item_category.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\dropdown_item_category.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_add.xml.flat",
@@ -40,16 +40,12 @@
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_messages.xml"
     },
     {
-        "merged": "com.strathtank.app-merged_res-37:/layout_item_project.xml.flat",
-        "source": "com.strathtank.app-main-39:/layout/item_project.xml"
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_item_file.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\item_file.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_activity_profile.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\activity_profile.xml"
-    },
-    {
-        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_item_file.xml.flat",
-        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\item_file.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_upload_background.xml.flat",
@@ -62,6 +58,10 @@
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_activity_project_details.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\activity_project_details.xml"
+    },
+    {
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_filter.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_filter.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_home_filled.xml.flat",
@@ -88,12 +88,20 @@
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_profile.xml"
     },
     {
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_dropdown_item_selector.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\dropdown_item_selector.xml"
+    },
+    {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_home.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_home.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_upload.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_upload.xml"
+    },
+    {
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_dropdown_arrow.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_dropdown_arrow.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\color_nav_item_color.xml.flat",
@@ -108,16 +116,20 @@
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\menu\\bottom_navigation.xml"
     },
     {
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_dropdown_selector.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\dropdown_selector.xml"
+    },
+    {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_title.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_title.xml"
     },
     {
-        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_share.xml.flat",
-        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_share.xml"
-    },
-    {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\layout_activity_project_explore.xml.flat",
         "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\layout\\activity_project_explore.xml"
+    },
+    {
+        "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_share.xml.flat",
+        "source": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-main-39:\\drawable\\ic_share.xml"
     },
     {
         "merged": "C:\\Users\\sharo\\.gradle\\daemon\\8.4\\com.strathtank.app-merged_res-37:\\drawable_ic_favorite.xml.flat",

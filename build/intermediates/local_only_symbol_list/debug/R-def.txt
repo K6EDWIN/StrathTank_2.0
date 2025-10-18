@@ -19,11 +19,14 @@ color text_primary
 color text_secondary
 color white
 drawable circle_dot
+drawable dropdown_selector
 drawable ic_add
 drawable ic_close
 drawable ic_description
+drawable ic_dropdown_arrow
 drawable ic_favorite
 drawable ic_file
+drawable ic_filter
 drawable ic_home
 drawable ic_home_filled
 drawable ic_link
@@ -41,6 +44,8 @@ drawable ic_upload_background
 id actionButtons
 id authorCategoryRow
 id bottomNavigation
+id categoryDropdown
+id categoryInputLayout
 id contentText
 id descriptionEditText
 id descriptionInputLayout
@@ -50,8 +55,6 @@ id fileIcon
 id fileInfo
 id fileName
 id filesRecyclerView
-id filterChipGroup
-id filterLabel
 id headerCard
 id headerIcon
 id headerSubtitle
@@ -79,6 +82,7 @@ id projectTags
 id projectTitle
 id projectViews
 id projectsCount
+id projectsListCard
 id projectsRecyclerView
 id removeButton
 id scrollView

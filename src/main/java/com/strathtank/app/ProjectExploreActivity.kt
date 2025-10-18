@@ -2,15 +2,21 @@ package com.strathtank.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import java.util.*
 
@@ -18,7 +24,7 @@ class ProjectExploreActivity : AppCompatActivity() {
     
     private lateinit var searchEditText: TextInputEditText
     private lateinit var projectsRecyclerView: RecyclerView
-    private lateinit var filterChipGroup: ChipGroup
+    private lateinit var categoryDropdown: AutoCompleteTextView
     private lateinit var bottomNavigation: BottomNavigationView
     private lateinit var projectsCountText: android.widget.TextView
     private lateinit var fabUpload: com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -42,62 +48,78 @@ class ProjectExploreActivity : AppCompatActivity() {
     private fun initializeViews() {
         searchEditText = findViewById(R.id.searchEditText)
         projectsRecyclerView = findViewById(R.id.projectsRecyclerView)
-        filterChipGroup = findViewById(R.id.filterChipGroup)
+        categoryDropdown = findViewById(R.id.categoryDropdown)
         bottomNavigation = findViewById(R.id.bottomNavigation)
         projectsCountText = findViewById(R.id.projectsCount)
         fabUpload = findViewById(R.id.fabUpload)
     }
     
     private fun setupClickListeners() {
-        searchEditText.setOnFocusChangeListener { _, _ -> 
-            performSearch()
+        // Handle search with sticky navbar and real-time search
+        searchEditText.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                // Keep navbar visible when typing - use ADJUST_PAN to prevent navbar from being hidden
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+            } else {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
         }
+        
+        // Add real-time search
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                performSearch()
+            }
+        })
         
         // Setup FAB click listener
         fabUpload.setOnClickListener {
             navigateToUploadPage()
         }
         
-        // Setup filter chips
-        setupFilterChips()
+        // Setup category dropdown
+        setupCategoryDropdown()
+        
+        // Add sticky navbar behavior to category dropdown as well
+        categoryDropdown.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+            } else {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
+        }
     }
     
-    private fun setupFilterChips() {
+    private fun setupCategoryDropdown() {
         val categories = ProjectCategory.values()
+        val categoryNames = mutableListOf("All Categories")
         
-        // Add "All" chip
-        val allChip = Chip(this)
-        allChip.text = "All"
-        allChip.isChecked = true
-        allChip.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                clearOtherChips()
-                filterProjects(null)
-            }
-        }
-        filterChipGroup.addView(allChip)
-        
-        // Add category chips
+        // Add category names to the list
         categories.forEach { category ->
-            val chip = Chip(this)
-            chip.text = category.name.replace("_", " ")
-            chip.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    clearOtherChips()
-                    chip.isChecked = true
-                    filterProjects(category)
-                }
-            }
-            filterChipGroup.addView(chip)
+            categoryNames.add(category.name.replace("_", " "))
         }
-    }
-    
-    private fun clearOtherChips() {
-        for (i in 0 until filterChipGroup.childCount) {
-            val chip = filterChipGroup.getChildAt(i) as Chip
-            if (chip != filterChipGroup.getChildAt(0)) { // Don't clear "All" chip
-                chip.isChecked = false
-            }
+        
+        // Create adapter for dropdown with better styling
+        val adapter = CategoryDropdownAdapter(this, categoryNames)
+        categoryDropdown.setAdapter(adapter)
+        categoryDropdown.threshold = 0 // Show dropdown immediately when clicked
+        
+        // Set default selection
+        categoryDropdown.setText("All Categories", false)
+        
+        // Ensure dropdown opens when clicked
+        categoryDropdown.setOnClickListener {
+            categoryDropdown.showDropDown()
+        }
+        
+        // Handle selection with highlighting
+        categoryDropdown.setOnItemClickListener { _, _, position, _ ->
+            // Update the selected text with better styling
+            val selectedCategory = if (position == 0) "All Categories" else categoryNames[position]
+            categoryDropdown.setText(selectedCategory, false)
+            performSearch() // Use performSearch to handle both category and search query
         }
     }
     
@@ -222,23 +244,33 @@ class ProjectExploreActivity : AppCompatActivity() {
     
     private fun performSearch() {
         val query = searchEditText.text?.toString()?.trim()?.lowercase()
+        val selectedCategory = getSelectedCategory()
         
-        if (query.isNullOrBlank()) {
-            filteredProjects.clear()
-            filteredProjects.addAll(allProjects)
-        } else {
-            filteredProjects.clear()
-            filteredProjects.addAll(
-                allProjects.filter { project ->
+        filteredProjects.clear()
+        filteredProjects.addAll(
+            allProjects.filter { project ->
+                val matchesCategory = selectedCategory == null || project.category == selectedCategory
+                val matchesSearch = query.isNullOrBlank() || 
                     project.title.lowercase().contains(query) ||
                     project.description.lowercase().contains(query) ||
                     project.tags.any { it.lowercase().contains(query) }
-                }
-            )
-        }
+                
+                matchesCategory && matchesSearch
+            }
+        )
         
         projectsAdapter.notifyDataSetChanged()
         updateProjectsCount()
+    }
+    
+    private fun getSelectedCategory(): ProjectCategory? {
+        val selectedText = categoryDropdown.text?.toString()
+        if (selectedText == "All Categories") return null
+        
+        val categories = ProjectCategory.values()
+        return categories.find { category ->
+            category.name.replace("_", " ") == selectedText
+        }
     }
     
     private fun filterProjects(category: ProjectCategory?) {
@@ -270,5 +302,47 @@ class ProjectExploreActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         // Don't call finish() - let user navigate back if needed
+    }
+}
+
+// Custom adapter for category dropdown with better styling
+class CategoryDropdownAdapter(
+    private val context: android.content.Context,
+    private val items: List<String>
+) : ArrayAdapter<String>(context, android.R.layout.simple_dropdown_item_1line, items) {
+    
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_dropdown_item_1line, parent, false)
+        
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = items[position]
+        textView.setTextColor(0xFF1A1A1A.toInt())
+        textView.textSize = 16f
+        textView.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textView.setPadding(24, 16, 24, 16)
+        
+        return view
+    }
+    
+    override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_dropdown_item_1line, parent, false)
+        
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = items[position]
+        textView.setTextColor(0xFF1A1A1A.toInt())
+        textView.textSize = 16f
+        textView.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textView.setPadding(32, 20, 32, 20)
+        
+        // Add special highlighting for the default "All Categories" option
+        if (position == 0) {
+            view.setBackgroundColor(0xFFF0F7FF.toInt()) // Light blue background
+        } else {
+            view.setBackgroundColor(0xFFFFFFFF.toInt()) // White background
+        }
+        
+        return view
     }
 }

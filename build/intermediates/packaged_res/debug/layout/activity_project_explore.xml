@@ -13,6 +13,7 @@
         android:layout_height="0dp"
         android:background="#FAFBFC"
         android:fillViewport="true"
+        android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -137,31 +138,41 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Filter Label -->
-                    <TextView
-                        android:id="@+id/filterLabel"
+                    <!-- Category Filter Dropdown -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/categoryInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Filter by Category"
-                        android:textColor="#1A1A1A"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
                         android:layout_marginTop="20dp"
+                        android:hint="Filter by Category"
+                        app:boxStrokeColor="#4285F4"
+                        app:hintTextColor="#4285F4"
+                        app:startIconDrawable="@drawable/ic_filter"
+                        app:startIconTint="#4285F4"
+                        app:boxBackgroundMode="outline"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/searchInputLayout" />
+                        app:layout_constraintTop_toBottomOf="@+id/searchInputLayout">
 
-                    <!-- Filter Chips -->
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/filterChipGroup"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="true"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/filterLabel" />
+                        <AutoCompleteTextView
+                            android:id="@+id/categoryDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="#1A1A1A"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:padding="16dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:drawableEnd="@drawable/ic_dropdown_arrow"
+                            android:drawablePadding="8dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Projects Count -->
                     <TextView
@@ -174,22 +185,36 @@
                         android:layout_marginTop="16dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/filterChipGroup" />
+                        app:layout_constraintTop_toBottomOf="@+id/categoryInputLayout" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Projects List -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/projectsRecyclerView"
+            <!-- Projects List Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/projectsListCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:strokeColor="#E8F0FE"
+                app:strokeWidth="1dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/searchCard" />
+                app:layout_constraintTop_toBottomOf="@+id/searchCard">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/projectsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:clipToPadding="false" />
+
+            </com.google.android.material.card.MaterialCardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -199,11 +224,13 @@
         android:id="@+id/fabUpload"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="20dp"
         android:src="@drawable/ic_add"
         android:contentDescription="Upload Project"
         app:backgroundTint="#4285F4"
         app:tint="#FFFFFF"
+        app:elevation="6dp"
+        app:borderWidth="0dp"
         app:layout_constraintBottom_toTopOf="@+id/bottomNavigation"
         app:layout_constraintEnd_toEndOf="parent" />
 

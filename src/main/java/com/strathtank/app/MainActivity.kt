@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -66,10 +67,34 @@ class MainActivity : AppCompatActivity() {
             uploadProject()
         }
         
-        // Add text change listeners to update upload button state
-        titleEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
-        descriptionEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
-        linkEditText.setOnFocusChangeListener { _, _ -> updateUploadButtonState() }
+        // Add text change listeners to update upload button state and handle sticky navbar
+        titleEditText.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                // Keep navbar visible when typing
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+            } else {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
+            updateUploadButtonState()
+        }
+        descriptionEditText.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                // Keep navbar visible when typing
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+            } else {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
+            updateUploadButtonState()
+        }
+        linkEditText.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                // Keep navbar visible when typing
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+            } else {
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
+            updateUploadButtonState()
+        }
     }
     
     private fun setupRecyclerView() {
