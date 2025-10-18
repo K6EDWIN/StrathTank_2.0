@@ -212,7 +212,6 @@
     app:menu="@menu/bottom_navigation"
     app:itemIconTint="@color/nav_item_color"
     app:itemTextColor="@color/nav_item_color"
-    app:itemActiveIndicatorStyle="@style/ActiveIndicator"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent" />

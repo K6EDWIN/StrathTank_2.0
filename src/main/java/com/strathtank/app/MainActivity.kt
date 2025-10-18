@@ -98,8 +98,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Set default selection
-        bottomNavigation.selectedItemId = R.id.nav_projects
+        // Set default selection after a short delay to ensure navigation is ready
+        bottomNavigation.post {
+            bottomNavigation.selectedItemId = R.id.nav_projects
+        }
     }
     
     private fun openFilePicker() {
