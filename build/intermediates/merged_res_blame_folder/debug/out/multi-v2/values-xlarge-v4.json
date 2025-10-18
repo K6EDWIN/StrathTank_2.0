@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.strathtank.app-mergeDebugResources-29:/values-xlarge-v4/values-xlarge-v4.xml",
+            "outputFile": "com.strathtank.app-mergeDebugResources-35:/values-xlarge-v4/values-xlarge-v4.xml",
             "map": [
                 {
                     "source": "C:\\Users\\sharo\\.gradle\\caches\\transforms-3\\697ee353b063d3c1ee71219466070b5b\\transformed\\appcompat-1.6.1\\res\\values-xlarge-v4\\values-xlarge-v4.xml",

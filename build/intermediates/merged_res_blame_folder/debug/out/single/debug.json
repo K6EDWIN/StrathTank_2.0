@@ -1,14 +1,26 @@
 [
     {
-        "merged": "com.strathtank.app-merged_res-31:/layout_activity_main.xml.flat",
-        "source": "com.strathtank.app-main-33:/layout/activity_main.xml"
+        "merged": "com.strathtank.app-merged_res-37:/xml_data_extraction_rules.xml.flat",
+        "source": "com.strathtank.app-main-39:/xml/data_extraction_rules.xml"
     },
     {
-        "merged": "com.strathtank.app-merged_res-31:/xml_backup_rules.xml.flat",
-        "source": "com.strathtank.app-main-33:/xml/backup_rules.xml"
+        "merged": "com.strathtank.app-merged_res-37:/xml_backup_rules.xml.flat",
+        "source": "com.strathtank.app-main-39:/xml/backup_rules.xml"
     },
     {
-        "merged": "com.strathtank.app-merged_res-31:/xml_data_extraction_rules.xml.flat",
-        "source": "com.strathtank.app-main-33:/xml/data_extraction_rules.xml"
+        "merged": "com.strathtank.app-merged_res-37:/layout_item_file.xml.flat",
+        "source": "com.strathtank.app-main-39:/layout/item_file.xml"
+    },
+    {
+        "merged": "com.strathtank.app-merged_res-37:/layout_activity_main.xml.flat",
+        "source": "com.strathtank.app-main-39:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.strathtank.app-merged_res-37:/drawable_ic_upload.xml.flat",
+        "source": "com.strathtank.app-main-39:/drawable/ic_upload.xml"
+    },
+    {
+        "merged": "com.strathtank.app-merged_res-37:/drawable_ic_file.xml.flat",
+        "source": "com.strathtank.app-main-39:/drawable/ic_file.xml"
     }
 ]
