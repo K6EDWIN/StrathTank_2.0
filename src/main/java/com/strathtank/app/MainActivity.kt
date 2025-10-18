@@ -109,11 +109,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Set default selection after a short delay to ensure navigation is ready
-        bottomNavigation.post {
-            bottomNavigation.selectedItemId = R.id.nav_projects
-            updateProfileIcon(false)
-        }
+        // Don't set any default selection - MainActivity is the upload page
+        // bottomNavigation.post {
+        //     bottomNavigation.selectedItemId = R.id.nav_home
+        //     updateProfileIcon(false)
+        // }
     }
     
     private fun updateProfileIcon(isActive: Boolean) {
