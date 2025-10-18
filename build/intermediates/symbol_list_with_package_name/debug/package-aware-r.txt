@@ -3025,6 +3025,8 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
+drawable ic_close
+drawable ic_description
 drawable ic_favorite
 drawable ic_file
 drawable ic_home
@@ -3047,7 +3049,9 @@ drawable ic_projects_filled
 drawable ic_search
 drawable ic_search_black_24
 drawable ic_share
+drawable ic_title
 drawable ic_upload
+drawable ic_upload_background
 drawable m3_appbar_background
 drawable m3_avd_hide_password
 drawable m3_avd_show_password
@@ -3287,6 +3291,7 @@ id design_menu_item_action_area
 id design_menu_item_action_area_stub
 id design_menu_item_text
 id design_navigation_view
+id detailsCard
 id dialog_button
 id dimensions
 id direct
@@ -3322,6 +3327,7 @@ id expand_activities_button
 id expanded_menu
 id fabUpload
 id fade
+id fileIcon
 id fileInfo
 id fileName
 id filesRecyclerView
@@ -3352,6 +3358,8 @@ id graph_wrap
 id group_divider
 id grouping
 id groups
+id headerCard
+id headerIcon
 id headerSubtitle
 id headerTitle
 id header_title
@@ -3423,6 +3431,7 @@ id material_timepicker_ok_button
 id material_timepicker_view
 id material_value_index
 id matrix
+id mediaCard
 id mediaLabel
 id message
 id middle
@@ -3551,6 +3560,7 @@ id scrollIndicatorDown
 id scrollIndicatorUp
 id scrollView
 id scrollable
+id searchCard
 id searchEditText
 id searchInputLayout
 id search_badge

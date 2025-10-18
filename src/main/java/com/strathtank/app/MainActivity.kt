@@ -82,8 +82,14 @@ class MainActivity : AppCompatActivity() {
         filesRecyclerView.adapter = filesAdapter
     }
     
+    private var isSettingNavigation = false
+    
     private fun setupBottomNavigation() {
         bottomNavigation.setOnItemSelectedListener { item ->
+            if (isSettingNavigation) {
+                return@setOnItemSelectedListener true
+            }
+            
             when (item.itemId) {
                 R.id.nav_home -> {
                     showHomeFragment()
@@ -109,11 +115,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Don't set any default selection - MainActivity is the upload page
-        // bottomNavigation.post {
-        //     bottomNavigation.selectedItemId = R.id.nav_home
-        //     updateProfileIcon(false)
-        // }
+        // Set Projects as selected since this is the upload page
+        isSettingNavigation = true
+        bottomNavigation.post {
+            bottomNavigation.selectedItemId = R.id.nav_projects
+            updateProfileIcon(false)
+            isSettingNavigation = false
+        }
     }
     
     private fun updateProfileIcon(isActive: Boolean) {
