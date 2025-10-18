@@ -1,0 +1,34 @@
+com.strathtank.app-core-runtime-2.2.0-0 C:\Users\sharo\.gradle\caches\transforms-3\06aa9d439898bb2a8edb55732e86935e\transformed\core-runtime-2.2.0\res
+com.strathtank.app-lifecycle-livedata-core-2.6.1-1 C:\Users\sharo\.gradle\caches\transforms-3\0ee01acaf3ccc056fd61f72835d3160d\transformed\lifecycle-livedata-core-2.6.1\res
+com.strathtank.app-profileinstaller-1.3.0-2 C:\Users\sharo\.gradle\caches\transforms-3\0ff0f1e5a538543bd4c2abf68d816b50\transformed\profileinstaller-1.3.0\res
+com.strathtank.app-lifecycle-viewmodel-savedstate-2.6.1-3 C:\Users\sharo\.gradle\caches\transforms-3\21df5fc0072277d100ec3bd23bfc7f21\transformed\lifecycle-viewmodel-savedstate-2.6.1\res
+com.strathtank.app-material-1.10.0-4 C:\Users\sharo\.gradle\caches\transforms-3\2d8edfc209e4ab65f141e6d058181d46\transformed\material-1.10.0\res
+com.strathtank.app-core-ktx-1.12.0-5 C:\Users\sharo\.gradle\caches\transforms-3\30e60494cc12bfd44f56743e253f3c1f\transformed\core-ktx-1.12.0\res
+com.strathtank.app-lifecycle-process-2.6.1-6 C:\Users\sharo\.gradle\caches\transforms-3\6634277e47a1319e1446632c3bfb21d3\transformed\lifecycle-process-2.6.1\res
+com.strathtank.app-core-1.12.0-7 C:\Users\sharo\.gradle\caches\transforms-3\66eab059273d7711764ca64e2bd58a42\transformed\core-1.12.0\res
+com.strathtank.app-coordinatorlayout-1.1.0-8 C:\Users\sharo\.gradle\caches\transforms-3\66f4feb0e82fddb4d699fb6166edeed6\transformed\coordinatorlayout-1.1.0\res
+com.strathtank.app-appcompat-1.6.1-9 C:\Users\sharo\.gradle\caches\transforms-3\697ee353b063d3c1ee71219466070b5b\transformed\appcompat-1.6.1\res
+com.strathtank.app-recyclerview-1.1.0-10 C:\Users\sharo\.gradle\caches\transforms-3\6d8705b3720be90b9eea7fb8bdc3d5ff\transformed\recyclerview-1.1.0\res
+com.strathtank.app-annotation-experimental-1.3.0-11 C:\Users\sharo\.gradle\caches\transforms-3\8296343c7edf50d8697c728d6ab6c547\transformed\annotation-experimental-1.3.0\res
+com.strathtank.app-lifecycle-viewmodel-2.6.1-12 C:\Users\sharo\.gradle\caches\transforms-3\891091620da74e32e0e430e0662bc54d\transformed\lifecycle-viewmodel-2.6.1\res
+com.strathtank.app-savedstate-1.2.1-13 C:\Users\sharo\.gradle\caches\transforms-3\8b2d7e45ef4015f2b7c03f2560adaefd\transformed\savedstate-1.2.1\res
+com.strathtank.app-emoji2-1.2.0-14 C:\Users\sharo\.gradle\caches\transforms-3\8b963607acd7529194bc0aa2ef7cdafc\transformed\emoji2-1.2.0\res
+com.strathtank.app-drawerlayout-1.1.1-15 C:\Users\sharo\.gradle\caches\transforms-3\9af6aa697790ad04f2129115a7a8fbee\transformed\drawerlayout-1.1.1\res
+com.strathtank.app-constraintlayout-2.1.4-16 C:\Users\sharo\.gradle\caches\transforms-3\9ec1ac9ae84bb4e1b2c41a15ebb65c2d\transformed\constraintlayout-2.1.4\res
+com.strathtank.app-startup-runtime-1.1.1-17 C:\Users\sharo\.gradle\caches\transforms-3\a4c7fc815a582c4abbb5556f9e472f6d\transformed\startup-runtime-1.1.1\res
+com.strathtank.app-fragment-1.3.6-18 C:\Users\sharo\.gradle\caches\transforms-3\b7fa08a3f5cba1cc2f788bf3279c53b4\transformed\fragment-1.3.6\res
+com.strathtank.app-viewpager2-1.0.0-19 C:\Users\sharo\.gradle\caches\transforms-3\ba9c11aa1a191cbec2bc33f809b381d8\transformed\viewpager2-1.0.0\res
+com.strathtank.app-lifecycle-runtime-2.6.1-20 C:\Users\sharo\.gradle\caches\transforms-3\c43529b4ce62306240399ff02c1f1bcd\transformed\lifecycle-runtime-2.6.1\res
+com.strathtank.app-appcompat-resources-1.6.1-21 C:\Users\sharo\.gradle\caches\transforms-3\ee8eb848c5330bef157da8af9750dcb7\transformed\appcompat-resources-1.6.1\res
+com.strathtank.app-cardview-1.0.0-22 C:\Users\sharo\.gradle\caches\transforms-3\f4ac3b97f816197194a893dadc0a8f77\transformed\cardview-1.0.0\res
+com.strathtank.app-lifecycle-livedata-2.6.1-23 C:\Users\sharo\.gradle\caches\transforms-3\f6b281d59e8a9d7f41149f954a3d0ed8\transformed\lifecycle-livedata-2.6.1\res
+com.strathtank.app-activity-1.8.0-24 C:\Users\sharo\.gradle\caches\transforms-3\f6c9a23920bb2dfd3b97f55ea3b8262d\transformed\activity-1.8.0\res
+com.strathtank.app-emoji2-views-helper-1.2.0-25 C:\Users\sharo\.gradle\caches\transforms-3\fa7655f9fa3bf5ed9f92e617b514235c\transformed\emoji2-views-helper-1.2.0\res
+com.strathtank.app-transition-1.2.0-26 C:\Users\sharo\.gradle\caches\transforms-3\fe397aa42d900d3b28a348b385f5e982\transformed\transition-1.2.0\res
+com.strathtank.app-pngs-27 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\build\generated\res\pngs\debug
+com.strathtank.app-resValues-28 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\build\generated\res\resValues\debug
+com.strathtank.app-packageDebugResources-29 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.strathtank.app-packageDebugResources-30 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.strathtank.app-merged_res-31 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\build\intermediates\merged_res\debug
+com.strathtank.app-debug-32 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\debug\res
+com.strathtank.app-main-33 C:\Users\sharo\Desktop\3.2\Mobile Dev Project\StrathTank_2.0\src\main\res
