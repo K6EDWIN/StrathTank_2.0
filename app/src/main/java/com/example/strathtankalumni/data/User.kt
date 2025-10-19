@@ -8,7 +8,8 @@ data class User(
     val country: String = "",
     val universityName: String = "",
     val degree: String = "",
-    val role: String = "pending"
+    val graduationYear: String = "",
+    val role: String = "alumni",
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(

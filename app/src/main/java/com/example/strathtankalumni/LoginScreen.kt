@@ -16,11 +16,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.strathtankalumni.navigation.Screen // Corrected import path
+import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.AuthState
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Use the theme colors from WelcomeScreen
+private val PrimaryBlue = Color(0xFF1976D2)
+
 @Composable
 fun LoginScreen(
     navController: NavHostController,
@@ -32,7 +34,6 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val strathColor = Color(0xFF00796B)
 
 
     LaunchedEffect(authState) {
@@ -42,14 +43,12 @@ fun LoginScreen(
 
                 if (state.navigateToHome) {
                     navController.navigate(Screen.Home.route) {
-
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
                 authViewModel.resetAuthState()
             }
             is AuthState.Error -> {
-
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
@@ -58,76 +57,76 @@ fun LoginScreen(
         }
     }
 
-    // --- UI Layout ---
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Alumni Login") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = strathColor, titleContentColor = Color.White)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    // --- UI Layout (Removed Scaffold and TopAppBar) ---
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp)
+            .systemBarsPadding(), // Ensures content starts below status bar
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Main Header (Matching Welcome Screen's directness)
+        Text(
+            text = "Log In",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+            color = PrimaryBlue,
+            modifier = Modifier.padding(bottom = 64.dp)
+        )
+
+        // Email Field
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email Address") },
+            leadingIcon = { Icon(Icons.Filled.MailOutline, contentDescription = "Email", tint = PrimaryBlue) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Password Field
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Password", tint = PrimaryBlue) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // FORGOT PASSWORD Link (New requirement, aligned right)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.CenterEnd
         ) {
-            Text(
-                text = "StrathTank Alumni",
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = strathColor,
-                modifier = Modifier.padding(bottom = 48.dp)
-            )
-
-            // Email Field
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email Address") },
-                leadingIcon = { Icon(Icons.Filled.MailOutline, contentDescription = "Email", tint = strathColor) },
-                modifier = Modifier.fillMaxWidth(),
-                // keyboardOptions removed
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password Field
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Password", tint = strathColor) },
-                modifier = Modifier.fillMaxWidth(),
-                // keyboardOptions removed
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Login Button
-            Button(
-                onClick = { authViewModel.signIn(email, password) },
-                // Disable button and show spinner while loading
-                enabled = authState != AuthState.Loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = strathColor)
-            ) {
-                if (authState == AuthState.Loading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                } else {
-                    Text("Log In", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                }
+            TextButton(onClick = { navController.navigate(Screen.ForgotPassword.route) }) {
+                Text("Forgot Password?", color = PrimaryBlue)
             }
+        }
+        Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Link to Registration
-            TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
-                Text("Don't have an account? Register Now", color = strathColor)
+        // Login Button
+        Button(
+            onClick = { authViewModel.signIn(email, password) },
+            enabled = authState != AuthState.Loading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        ) {
+            if (authState == AuthState.Loading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Log In", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Link to Registration
+        TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
+            Text("Don't have an account? Register Now", color = PrimaryBlue)
         }
     }
 }

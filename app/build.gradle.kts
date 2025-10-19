@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.strathtankalumni"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36 // Use direct assignment for integer properties
 
     defaultConfig {
         applicationId = "com.example.strathtankalumni"
@@ -43,6 +41,8 @@ android {
 }
 
 dependencies {
+    // Note: It looks like this dependencies block is nested. I'm keeping your structure but
+    // ensure this is inside the main `dependencies { ... }` block of your app module.
     dependencies {
         // 1. KOTLIN COROUTINES (Good practice for async Firebase/network calls)
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1") // Latest stable
@@ -66,6 +66,9 @@ dependencies {
         implementation(libs.androidx.compose.ui.graphics)
         implementation(libs.androidx.compose.ui.tooling.preview)
         implementation(libs.androidx.compose.material3)
+
+        // *** FIX: ADDED DEPENDENCY FOR EXTENDED MATERIAL ICONS (e.g., Icons.Filled.People, Icons.Filled.Work) ***
+        implementation("androidx.compose.material:material-icons-extended")
 
         // 4. NAVIGATION - FIXES NavHostController error
         implementation("androidx.navigation:navigation-compose:2.7.5") // Standard, stable version
