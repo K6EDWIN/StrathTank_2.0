@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "754937251757",
+    "project_id": "strathtankalumniapp",
+    "storage_bucket": "strathtankalumniapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754937251757:android:9faf80e87e489eb0c4c324",
+        "android_client_info": {
+          "package_name": "com.example.strathtankalumni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-gZw4eo8tHSaxHbuVVxcjjJb4zwPmr-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
