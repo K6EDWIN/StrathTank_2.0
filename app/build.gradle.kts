@@ -45,11 +45,15 @@ dependencies {
     // ✅ 1. Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation("androidx.compose.material:material-icons-extended-android:1.6.7")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     // ✅ 2. Firebase (BOM + KTX versions)
     implementation(platform(libs.google.firebase.bom))
     implementation(libs.google.firebase.auth)
     implementation(libs.google.firebase.firestore)
     implementation(libs.google.firebase.database)
+    implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
+
     // ✅ 3. AndroidX Core KTX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

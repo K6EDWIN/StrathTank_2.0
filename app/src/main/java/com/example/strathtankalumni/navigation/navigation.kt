@@ -29,7 +29,7 @@ sealed class Screen(val route: String) {
     object AlumniMessages : Screen("alumni_messages_screen")
     object AlumniProfile : Screen("alumni_profile_screen")
     object AlumniNotifications : Screen("alumni_notifications_screen")
-    object EditProfile : Screen("alumni_edit_profile_screen")
+
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 }
@@ -102,11 +102,6 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     mainNavController = mainNavController,
                     alumniNavController = navController
                 )
-            }
-
-            //edit profile screen
-            composable(Screen.EditProfile.route) {
-                AlumniEditProfileScreen(alumniNavController = navController)
             }
         }
     }
