@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.navigation.Screen
 
-
 data class NavItem(
     val route: String,
     val icon: ImageVector,
@@ -28,8 +27,6 @@ private val AlumniNavItems = listOf(
     NavItem(Screen.AlumniProfile.route, Icons.Filled.PersonOutline, "Profile")
 )
 
-private val PrimaryBlue = Color(0xFF1976D2)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniNavLayout(
@@ -38,7 +35,6 @@ fun AlumniNavLayout(
     currentRoute: String?,
     content: @Composable (NavHostController, PaddingValues) -> Unit
 ) {
-    // Determine the title based on the current nested route
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
         Screen.AlumniProjects.route -> "Projects"
@@ -49,23 +45,20 @@ fun AlumniNavLayout(
 
     Scaffold(
         topBar = {
-
             CenterAlignedTopAppBar(
-                title = { Text(text = title, color = PrimaryBlue) },
+                title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.White
                 ),
                 actions = {
-
                     if (currentRoute == Screen.AlumniHome.route) {
                         IconButton(onClick = {
-                            // Use mainNavController to go to the new screen
                             mainNavController.navigate(Screen.AlumniNotifications.route)
                         }) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Notifications",
-                                tint = PrimaryBlue
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -95,17 +88,16 @@ fun AlumniNavLayout(
                         },
                         label = { Text(item.label) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PrimaryBlue,
-                            selectedTextColor = PrimaryBlue,
-                            unselectedIconColor = Color.Gray,
-                            unselectedTextColor = Color.Gray
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
             }
         }
     ) { paddingValues ->
-
         content(navController, paddingValues)
     }
 }

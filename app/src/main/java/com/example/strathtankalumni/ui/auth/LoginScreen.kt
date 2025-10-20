@@ -20,35 +20,23 @@ import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.AuthState
 
-private val PrimaryBlue = Color(0xFF1976D2)
-
 @Composable
 fun LoginScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-
     val authState by authViewModel.authState.collectAsState()
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
 
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Success -> {
-                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-
-
-                when (state.userRole) {
-                    "alumni" -> navController.navigate(Screen.AlumniHome.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
-                    "admin" -> navController.navigate(Screen.AdminHome.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
-                    else -> {}
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                val destination = if (state.userRole == "admin") Screen.AdminHome.route else Screen.AlumniHome.route
+                navController.navigate(destination) {
+                    popUpTo(Screen.Welcome.route) { inclusive = true }
                 }
                 authViewModel.resetAuthState()
             }
@@ -56,59 +44,58 @@ fun LoginScreen(
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
-            else -> {
-            }
+            else -> Unit
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp)
-            .systemBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text(
-            text = "Log In",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-            color = PrimaryBlue,
-            modifier = Modifier.padding(bottom = 64.dp)
+            "Welcome Back",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
-
+        Text(
+            "Log in to your account",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email Address") },
-            leadingIcon = { Icon(Icons.Filled.MailOutline, contentDescription = "Email", tint = PrimaryBlue) },
+            leadingIcon = { Icon(Icons.Filled.MailOutline, contentDescription = "Email", tint = MaterialTheme.colorScheme.primary) },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
-
 
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
-            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Password", tint = PrimaryBlue) },
+            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Password", tint = MaterialTheme.colorScheme.primary) },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(16.dp))
-
 
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.CenterEnd
         ) {
             TextButton(onClick = { navController.navigate(Screen.ForgotPassword.route) }) {
-                Text("Forgot Password?", color = PrimaryBlue)
+                Text("Forgot Password?", color = MaterialTheme.colorScheme.primary)
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
-
 
         Button(
             onClick = { authViewModel.signIn(email, password) },
@@ -116,7 +103,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             if (authState == AuthState.Loading) {
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -124,12 +111,10 @@ fun LoginScreen(
                 Text("Log In", style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
         }
-
         Spacer(modifier = Modifier.height(16.dp))
 
-
         TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
-            Text("Don't have an account? Register Now", color = PrimaryBlue)
+            Text("Don't have an account? Register Now", color = MaterialTheme.colorScheme.primary)
         }
     }
 }

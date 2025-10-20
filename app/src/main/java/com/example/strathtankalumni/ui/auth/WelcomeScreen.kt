@@ -22,9 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.navigation.Screen
 
-private val PrimaryBlue = Color(0xFF1976D2)
-private val DarkText = Color(0xFF212121)
-
 data class FeatureItem(
     val icon: ImageVector,
     val description: String
@@ -48,14 +45,13 @@ fun WelcomeScreen(navController: NavHostController) {
     ) {
         Spacer(modifier = Modifier.height(48.dp))
 
-
         Text(
             text = "StrathTank Alumni",
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             ),
-            color = DarkText,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
@@ -67,14 +63,12 @@ fun WelcomeScreen(navController: NavHostController) {
         Text(
             text = "A platform for alumni to share projects, mentor others, and support innovation.",
             style = MaterialTheme.typography.bodyLarge,
-            color = DarkText,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-
             modifier = Modifier
                 .padding(start = 16.dp, end = 16.dp)
                 .padding(bottom = 48.dp)
         )
-
 
         Column(
             modifier = Modifier
@@ -91,14 +85,14 @@ fun WelcomeScreen(navController: NavHostController) {
                     Icon(
                         imageVector = item.icon,
                         contentDescription = null,
-                        tint = PrimaryBlue,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(30.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = item.description,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = DarkText
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -111,7 +105,7 @@ fun WelcomeScreen(navController: NavHostController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Get Started", style = MaterialTheme.typography.titleMedium, color = Color.White)
         }
@@ -123,9 +117,9 @@ fun WelcomeScreen(navController: NavHostController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(PrimaryBlue))
+            border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(MaterialTheme.colorScheme.primary))
         ) {
-            Text("Login", style = MaterialTheme.typography.titleMedium, color = PrimaryBlue)
+            Text("Login", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

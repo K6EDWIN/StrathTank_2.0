@@ -25,8 +25,6 @@ import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.AuthState
 import com.example.strathtankalumni.util.UniversityData
 import java.util.Calendar
-private val PrimaryBlue = Color(0xFF1976D2)
-private val DarkText = Color(0xFF212121)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,340 +35,131 @@ fun RegistrationScreen(
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
 
-
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf(UniversityData.countries.first()) }
     var universityName by remember { mutableStateOf("") }
     var degree by remember { mutableStateOf("") }
-
     var graduationYear by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("alumni") } // Default to alumni
+    val role by remember { mutableStateOf("alumni") }
 
+    var countryMenuExpanded by remember { mutableStateOf(false) }
+    val availableUniversities = remember(country) { UniversityData.getUniversitiesForCountry(country) }
+    var universityMenuExpanded by remember { mutableStateOf(false) }
 
-    var isCountryDropdownExpanded by remember { mutableStateOf(false) }
-    var isDegreeDropdownExpanded by remember { mutableStateOf(false) }
-    var isYearDropdownExpanded by remember { mutableStateOf(false) }
-    var isRoleDropdownExpanded by remember { mutableStateOf(false) }
-
-    // Dynamic lists
-    val universitySuggestions = remember(country, universityName) {
-        UniversityData.getUniversitiesForCountry(country).filter {
-            it.contains(universityName, ignoreCase = true)
-        }
-    }
-    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
-    val graduationYears = remember { (currentYear downTo 1970).map { it.toString() } }
-    val roles = listOf("alumni", "admin")
-
-
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val years = (1980..currentYear).map { it.toString() }.reversed()
+    var yearMenuExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Success -> {
-
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-
                 navController.navigate(Screen.Login.route) {
-                    popUpTo(Screen.Register.route) { inclusive = true }
+                    popUpTo(Screen.Welcome.route)
                 }
                 authViewModel.resetAuthState()
             }
             is AuthState.Error -> {
-                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
-            else -> {}
+            else -> Unit
         }
     }
-
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .systemBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         item {
-
-            Text(
-                text = "Registration",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = PrimaryBlue,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            OutlinedTextField(
-                value = firstName,
-                onValueChange = { firstName = it },
-                label = { Text("First Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = lastName,
-                onValueChange = { lastName = it },
-                label = { Text("Last Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                leadingIcon = { Icon(Icons.Filled.MailOutline, contentDescription = "Email", tint = PrimaryBlue) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Confirm Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+            Text("Create Account", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text("Join our alumni network", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // Country Dropdown
-        item {
-            OutlinedTextField(
-                value = country.ifEmpty { "Select Country" },
-                onValueChange = {},
-                label = { Text("Country") },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.ArrowDropDown,
-                        contentDescription = "Dropdown",
-                        Modifier.clickable { isCountryDropdownExpanded = true }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            DropdownMenu(
-                expanded = isCountryDropdownExpanded,
-                onDismissRequest = { isCountryDropdownExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.85f)
-            ) {
-                UniversityData.countries.forEach { selection ->
-                    DropdownMenuItem(
-                        text = { Text(selection) },
-                        onClick = {
-                            country = selection
-                            universityName = "" // Reset university when country changes
-                            isCountryDropdownExpanded = false
-                        }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
+        item { OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text("First Name") }, modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Last Name") }, modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email Address") }, leadingIcon = { Icon(Icons.Default.MailOutline, null) }, modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = { Text("Confirm Password") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { OutlinedTextField(value = degree, onValueChange = { degree = it }, label = { Text("Degree (e.g., BSc. Computer Science)") }, modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
         item {
-            OutlinedTextField(
-                value = universityName,
-                onValueChange = { universityName = it },
-                label = { Text("University Name") },
-                placeholder = { Text(if (country.isEmpty()) "Select Country First" else "e.g., Strathmore University") },
-                enabled = country.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (universityName.isNotEmpty() && universitySuggestions.isNotEmpty()) {
-                Card(
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-8).dp),
-                    elevation = CardDefaults.cardElevation(2.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        universitySuggestions.take(5).forEach { suggestion ->
-                            Text(
-                                text = suggestion,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { universityName = suggestion }
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
+            ExposedDropdownMenuBox(expanded = countryMenuExpanded, onExpandedChange = { countryMenuExpanded = !countryMenuExpanded }) {
+                OutlinedTextField(value = country, onValueChange = {}, readOnly = true, label = { Text("Country") }, trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                ExposedDropdownMenu(expanded = countryMenuExpanded, onDismissRequest = { countryMenuExpanded = false }) {
+                    UniversityData.countries.forEach { selectionOption ->
+                        DropdownMenuItem(text = { Text(selectionOption) }, onClick = { country = selectionOption; countryMenuExpanded = false; universityName = "" })
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
-
-        // Degree Dropdown
-        item {
-            OutlinedTextField(
-                value = degree.ifEmpty { "Select Degree" },
-                onValueChange = {},
-                label = { Text("Degree") },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.ArrowDropDown,
-                        contentDescription = "Dropdown",
-                        Modifier.clickable { isDegreeDropdownExpanded = true }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            DropdownMenu(
-                expanded = isDegreeDropdownExpanded,
-                onDismissRequest = { isDegreeDropdownExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.85f)
-            ) {
-                UniversityData.sampleDegrees.forEach { selection ->
-                    DropdownMenuItem(
-                        text = { Text(selection) },
-                        onClick = {
-                            degree = selection
-                            isDegreeDropdownExpanded = false
-                        }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
         item {
-            OutlinedTextField(
-                value = graduationYear.ifEmpty { "Graduated In:" },
-                onValueChange = {},
-                label = { Text("Graduation Year") },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.ArrowDropDown,
-                        contentDescription = "Dropdown",
-                        Modifier.clickable { isYearDropdownExpanded = true }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            DropdownMenu(
-                expanded = isYearDropdownExpanded,
-                onDismissRequest = { isYearDropdownExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.85f)
-            ) {
-                graduationYears.forEach { year ->
-                    DropdownMenuItem(
-                        text = { Text(year) },
-                        onClick = {
-                            graduationYear = year
-                            isYearDropdownExpanded = false
-                        }
-                    )
+            ExposedDropdownMenuBox(expanded = universityMenuExpanded, onExpandedChange = { universityMenuExpanded = !universityMenuExpanded }) {
+                OutlinedTextField(value = universityName, onValueChange = {}, readOnly = true, label = { Text("University") }, trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                ExposedDropdownMenu(expanded = universityMenuExpanded, onDismissRequest = { universityMenuExpanded = false }) {
+                    availableUniversities.forEach { selectionOption ->
+                        DropdownMenuItem(text = { Text(selectionOption) }, onClick = { universityName = selectionOption; universityMenuExpanded = false })
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
-
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
         item {
-            OutlinedTextField(
-                value = role.ifEmpty { "Select Role" },
-                onValueChange = {},
-                label = { Text("Role") },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.ArrowDropDown,
-                        contentDescription = "Dropdown",
-                        Modifier.clickable { isRoleDropdownExpanded = true }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            DropdownMenu(
-                expanded = isRoleDropdownExpanded,
-                onDismissRequest = { isRoleDropdownExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.85f)
-            ) {
-                roles.forEach { selection ->
-                    DropdownMenuItem(
-                        text = { Text(selection) },
-                        onClick = {
-                            role = selection
-                            isRoleDropdownExpanded = false
-                        }
-                    )
+            ExposedDropdownMenuBox(expanded = yearMenuExpanded, onExpandedChange = { yearMenuExpanded = !yearMenuExpanded }) {
+                OutlinedTextField(value = graduationYear, onValueChange = {}, readOnly = true, label = { Text("Graduation Year") }, trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) }, modifier = Modifier.menuAnchor().fillMaxWidth())
+                ExposedDropdownMenu(expanded = yearMenuExpanded, onDismissRequest = { yearMenuExpanded = false }) {
+                    years.forEach { selectionOption ->
+                        DropdownMenuItem(text = { Text(selectionOption) }, onClick = { graduationYear = selectionOption; yearMenuExpanded = false })
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
-
+        item { Spacer(modifier = Modifier.height(32.dp)) }
 
         item {
             Button(
                 onClick = {
                     if (password != confirmPassword) {
-                        Toast.makeText(context, "Passwords do not match!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Passwords do not match.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    if (country.isBlank() || universityName.isBlank() || degree.isBlank() || firstName.isBlank() || lastName.isBlank() || graduationYear.isBlank() || role.isBlank()) {
-                        Toast.makeText(context, "Please complete all fields.", Toast.LENGTH_LONG).show()
-                        return@Button
-                    }
-
-                    // Password length check
-                    if (password.length < 8) {
-                        Toast.makeText(context, "Password must be at least 8 characters.", Toast.LENGTH_LONG).show()
-                        return@Button
-                    }
-
-
-                    val newUser = User(
-                        email = email,
-                        firstName = firstName,
-                        lastName = lastName,
-                        country = country,
-                        universityName = universityName,
-                        degree = degree,
-                        graduationYear = graduationYear,
-                        role = role
-                    )
+                    val newUser = User(email = email, firstName = firstName, lastName = lastName, country = country, universityName = universityName, degree = degree, graduationYear = graduationYear, role = role)
                     authViewModel.registerUser(newUser, password)
                 },
                 enabled = authState != AuthState.Loading,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (authState == AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-
                     Text("Register", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Login
         item {
             TextButton(onClick = { navController.navigate(Screen.Login.route) }) {
-                Text("Already have an account? Log In", color = DarkText)
+                Text("Already have an account? Log In", color = MaterialTheme.colorScheme.onBackground)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
