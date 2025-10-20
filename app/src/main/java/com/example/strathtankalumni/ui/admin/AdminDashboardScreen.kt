@@ -17,7 +17,7 @@ fun AdminDashboardScreen(navController: NavHostController) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "ADMIN DASHBOARD",
+            text = " ",
             style = MaterialTheme.typography.headlineLarge,
             color = Color(0xFFD32F2F)
         )

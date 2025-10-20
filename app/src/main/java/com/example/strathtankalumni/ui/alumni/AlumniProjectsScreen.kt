@@ -10,13 +10,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 
 @Composable
-fun AlumniHomeScreen(navController: NavHostController) {
+fun AlumniProjectsScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp) // Add some content padding
+            .padding(16.dp)
     ) {
-        Text(text = "  ")
-
+        Text(text = " ")
     }
 }
