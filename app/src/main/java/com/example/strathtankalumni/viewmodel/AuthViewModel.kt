@@ -10,11 +10,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// Enum for handling authentication state feedback
+// authentication state feedback
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    data class Success(val message: String, val navigateToHome: Boolean = false) : AuthState()
+    // UPDATED: Now passes the user's role on success instead of a generic boolean
+    data class Success(val message: String, val userRole: String? = null) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -27,7 +28,7 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
-    // Function to register a new user and save their full profile to Firestore
+    // register a new user and save their full profile to Firestore
     fun registerUser(
         user: User,
         password: String
@@ -46,6 +47,7 @@ class AuthViewModel : ViewModel() {
                 val firebaseUser = authResult.user
 
                 if (firebaseUser != null) {
+                    // Ensures the role is saved based on the registration input (alumni or admin)
                     val userProfile = user.copy(userId = firebaseUser.uid)
 
 
@@ -54,7 +56,8 @@ class AuthViewModel : ViewModel() {
                         .set(userProfile.toMap())
                         .await()
 
-                    _authState.value = AuthState.Success("Registration successful! Waiting for Admin approval.", navigateToHome = false)
+                    // Registration success, but no automatic navigation home
+                    _authState.value = AuthState.Success("Registration successful! Waiting for Admin approval.")
                 } else {
                     _authState.value = AuthState.Error("Firebase registration failed.")
                 }
@@ -85,20 +88,28 @@ class AuthViewModel : ViewModel() {
                     if (userDoc.exists()) {
                         val user = userDoc.toObject(User::class.java)
 
-                        if (user?.role == "alumni") {
-                            _authState.value = AuthState.Success("Login successful!", navigateToHome = true)
-                        } else if (user?.role == "pending") {
-
-                            _authState.value = AuthState.Error("Your account is pending admin approval.")
-                        } else {
-                            _authState.value = AuthState.Error("Account verification required. Please contact admin.")
+                        // Check the role and pass it in the Success state
+                        when (user?.role) {
+                            "alumni" -> {
+                                // Navigate to Alumni Home
+                                _authState.value = AuthState.Success("Login successful!", userRole = "alumni")
+                            }
+                            "admin" -> {
+                                // Navigate to Admin Home
+                                _authState.value = AuthState.Success("Admin login successful!", userRole = "admin")
+                            }
+                            // Assuming all new users default to "alumni" in RegistrationScreen
+                            else -> {
+                                // Catch case for unapproved/pending accounts if the role logic is more complex
+                                _authState.value = AuthState.Error("Account status pending or role not recognized.")
+                            }
                         }
                     } else {
-
                         _authState.value = AuthState.Error("User profile data not found.")
                     }
                 }
             } catch (e: Exception) {
+                // Firebase exception for bad credentials
                 _authState.value = AuthState.Error("Login failed: Invalid email or password.")
             }
         }

@@ -1,4 +1,4 @@
-package com.example.strathtankalumni.ui
+package com.example.strathtankalumni.ui.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -20,7 +20,6 @@ import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.AuthState
 
-// Use the theme colors from WelcomeScreen
 private val PrimaryBlue = Color(0xFF1976D2)
 
 @Composable
@@ -41,10 +40,15 @@ fun LoginScreen(
             is AuthState.Success -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
 
-                if (state.navigateToHome) {
-                    navController.navigate(Screen.Home.route) {
+
+                when (state.userRole) {
+                    "alumni" -> navController.navigate(Screen.AlumniHome.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                    "admin" -> navController.navigate(Screen.AdminHome.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                    else -> {}
                 }
                 authViewModel.resetAuthState()
             }
@@ -57,16 +61,15 @@ fun LoginScreen(
         }
     }
 
-    // --- UI Layout (Removed Scaffold and TopAppBar) ---
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 32.dp)
-            .systemBarsPadding(), // Ensures content starts below status bar
+            .systemBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Main Header (Matching Welcome Screen's directness)
+
         Text(
             text = "Log In",
             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
@@ -74,7 +77,7 @@ fun LoginScreen(
             modifier = Modifier.padding(bottom = 64.dp)
         )
 
-        // Email Field
+
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -84,7 +87,7 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Password Field
+
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -95,7 +98,7 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // FORGOT PASSWORD Link (New requirement, aligned right)
+
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.CenterEnd
@@ -106,7 +109,7 @@ fun LoginScreen(
         }
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Login Button
+
         Button(
             onClick = { authViewModel.signIn(email, password) },
             enabled = authState != AuthState.Loading,
@@ -124,7 +127,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Link to Registration
+
         TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
             Text("Don't have an account? Register Now", color = PrimaryBlue)
         }

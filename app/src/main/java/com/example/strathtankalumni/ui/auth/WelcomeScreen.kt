@@ -1,6 +1,5 @@
-package com.example.strathtankalumni.ui
+package com.example.strathtankalumni.ui.auth
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,22 +22,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.navigation.Screen
 
-// Define the colors based on the image
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
 
-/**
- * Data class for feature list items on the welcome screen.
- */
 data class FeatureItem(
     val icon: ImageVector,
     val description: String
 )
 
-/**
- * The Welcome/Onboarding screen for first-time users.
- * It explains the app's value and offers clear navigation paths.
- */
 @Composable
 fun WelcomeScreen(navController: NavHostController) {
     val features = listOf(
@@ -57,7 +48,7 @@ fun WelcomeScreen(navController: NavHostController) {
     ) {
         Spacer(modifier = Modifier.height(48.dp))
 
-        // --- Header ---
+
         Text(
             text = "StrathTank Alumni",
             style = MaterialTheme.typography.headlineLarge.copy(
@@ -78,13 +69,13 @@ fun WelcomeScreen(navController: NavHostController) {
             style = MaterialTheme.typography.bodyLarge,
             color = DarkText,
             textAlign = TextAlign.Center,
-            // FIX: Using the all-sides, explicit padding to resolve potential import conflict/ambiguity
+
             modifier = Modifier
                 .padding(start = 16.dp, end = 16.dp)
                 .padding(bottom = 48.dp)
         )
 
-        // --- Features List ---
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,9 +106,6 @@ fun WelcomeScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(64.dp))
 
-        // --- Call-to-Action Buttons ---
-
-        // 1. Get Started Button (Primary)
         Button(
             onClick = { navController.navigate(Screen.Register.route) },
             modifier = Modifier
@@ -130,7 +118,6 @@ fun WelcomeScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Login Button (Secondary/Outlined)
         OutlinedButton(
             onClick = { navController.navigate(Screen.Login.route) },
             modifier = Modifier

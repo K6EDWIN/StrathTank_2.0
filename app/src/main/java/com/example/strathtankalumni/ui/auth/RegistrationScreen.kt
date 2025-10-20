@@ -1,4 +1,4 @@
-package com.example.strathtankalumni.ui
+package com.example.strathtankalumni.ui.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -24,9 +24,7 @@ import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.AuthState
 import com.example.strathtankalumni.util.UniversityData
-import java.util.Calendar // Needed for generating year list
-
-// Use the consistent theme color
+import java.util.Calendar
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
 
@@ -39,7 +37,7 @@ fun RegistrationScreen(
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
 
-    // State for user inputs
+
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -49,11 +47,10 @@ fun RegistrationScreen(
     var universityName by remember { mutableStateOf("") }
     var degree by remember { mutableStateOf("") }
 
-    // NEW STATES
     var graduationYear by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("alumni") } // Default to alumni
 
-    // State for recommendation drop-downs
+
     var isCountryDropdownExpanded by remember { mutableStateOf(false) }
     var isDegreeDropdownExpanded by remember { mutableStateOf(false) }
     var isYearDropdownExpanded by remember { mutableStateOf(false) }
@@ -70,13 +67,13 @@ fun RegistrationScreen(
     val roles = listOf("alumni", "admin")
 
 
-    // Handle AuthState changes
+
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Success -> {
-                // Show success toast
+
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                // Navigate back to Login after successful registration
+
                 navController.navigate(Screen.Login.route) {
                     popUpTo(Screen.Register.route) { inclusive = true }
                 }
@@ -90,7 +87,7 @@ fun RegistrationScreen(
         }
     }
 
-    // Removed Scaffold and TopAppBar
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -99,9 +96,9 @@ fun RegistrationScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            // Updated Headline
+
             Text(
-                text = "Register",
+                text = "Registration",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = PrimaryBlue,
                 modifier = Modifier.padding(bottom = 24.dp)
@@ -186,17 +183,17 @@ fun RegistrationScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // University Name Input with Suggestions
+
         item {
             OutlinedTextField(
                 value = universityName,
                 onValueChange = { universityName = it },
-                label = { Text("University Name (Start Typing)") },
+                label = { Text("University Name") },
                 placeholder = { Text(if (country.isEmpty()) "Select Country First" else "e.g., Strathmore University") },
                 enabled = country.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
             )
-            // Displaying suggestions below the University input field
+
             if (universityName.isNotEmpty() && universitySuggestions.isNotEmpty()) {
                 Card(
                     shape = RoundedCornerShape(4.dp),
@@ -256,7 +253,7 @@ fun RegistrationScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // NEW: Graduated In Dropdown
+
         item {
             OutlinedTextField(
                 value = graduationYear.ifEmpty { "Graduated In:" },
@@ -290,7 +287,7 @@ fun RegistrationScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // NEW: Role Dropdown
+
         item {
             OutlinedTextField(
                 value = role.ifEmpty { "Select Role" },
@@ -324,7 +321,7 @@ fun RegistrationScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Registration Button
+
         item {
             Button(
                 onClick = {
@@ -338,8 +335,8 @@ fun RegistrationScreen(
                     }
 
                     // Password length check
-                    if (password.length < 6) {
-                        Toast.makeText(context, "Password must be at least 6 characters.", Toast.LENGTH_LONG).show()
+                    if (password.length < 8) {
+                        Toast.makeText(context, "Password must be at least 8 characters.", Toast.LENGTH_LONG).show()
                         return@Button
                     }
 
@@ -351,8 +348,8 @@ fun RegistrationScreen(
                         country = country,
                         universityName = universityName,
                         degree = degree,
-                        graduationYear = graduationYear, // NEW: Added graduation year
-                        role = role // UPDATED: Ensure role is included
+                        graduationYear = graduationYear,
+                        role = role
                     )
                     authViewModel.registerUser(newUser, password)
                 },
@@ -363,14 +360,14 @@ fun RegistrationScreen(
                 if (authState == AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    // Updated Button Text
+
                     Text("Register", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Back to Login Link
+        // Login
         item {
             TextButton(onClick = { navController.navigate(Screen.Login.route) }) {
                 Text("Already have an account? Log In", color = DarkText)

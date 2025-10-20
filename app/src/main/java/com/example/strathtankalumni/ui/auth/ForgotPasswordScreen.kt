@@ -1,9 +1,8 @@
-package com.example.strathtankalumni.ui
+package com.example.strathtankalumni.ui.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,14 +17,9 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
-// Use the theme colors from WelcomeScreen
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
 
-/**
- * Defines the stages for the password reset process.
- * Simplified to remove client-side code verification.
- */
 private sealed class ResetStage {
     object EMAIL_INPUT : ResetStage()
     object CODE_SENT : ResetStage() // Success message stage
@@ -36,14 +30,12 @@ fun ForgotPasswordScreen(navController: NavHostController) {
     val auth = Firebase.auth
     val context = LocalContext.current
 
-    // State for the two-step process
     var resetStage by remember { mutableStateOf<ResetStage>(ResetStage.EMAIL_INPUT) }
 
     // Input state
     var email by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Function to handle the password reset email sending
     val sendResetEmail: () -> Unit = {
         if (email.isNotBlank()) {
             isLoading = true
@@ -69,11 +61,9 @@ fun ForgotPasswordScreen(navController: NavHostController) {
     }
 
 
-    // --- UI Layout ---
     Column(
         modifier = Modifier
             .fillMaxSize()
-            // Reverting to the original padding syntax
             .padding(horizontal = 32.dp)
             .systemBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,9 +77,7 @@ fun ForgotPasswordScreen(navController: NavHostController) {
         )
 
         when (resetStage) {
-            // =======================================================
-            // STAGE 1: EMAIL INPUT (SEND CODE)
-            // =======================================================
+
             ResetStage.EMAIL_INPUT -> {
                 Text(
                     text = "Enter your email to receive a password reset link.",
@@ -121,9 +109,7 @@ fun ForgotPasswordScreen(navController: NavHostController) {
                 }
             }
 
-            // =======================================================
-            // STAGE 2: CODE SENT (SUCCESS/RESEND)
-            // =======================================================
+
             ResetStage.CODE_SENT -> {
                 Text(
                     text = "A password reset link has been sent to $email. Please check your email inbox to proceed.",
@@ -154,9 +140,11 @@ fun ForgotPasswordScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(24.dp))
 
-        // Navigation back to Login (always visible)
+        // Navigation back to Login
         TextButton(onClick = { navController.popBackStack() }) {
             Text("Back to Login", color = DarkText)
         }
     }
 }
+
+annotation class ForgotPasswordScreen
