@@ -88,15 +88,24 @@ fun AlumniGraph(mainNavController: NavHostController) {
             startDestination = Screen.AlumniHome.route,
             modifier = Modifier.padding(paddingValues)
         ) {
+            // ✅ Normal screens
             composable(Screen.AlumniHome.route) {
                 AlumniHomeScreen(navController = navController)
             }
+
+            // ✅ Projects screen — pass padding explicitly
             composable(Screen.AlumniProjects.route) {
-                AlumniProjectsScreen(navController = navController)
+                AlumniProjectsScreen(
+                    navController = navController,
+                    padding = paddingValues
+                )
             }
+
+            // ✅ Other screens remain unaffected
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(navController = navController)
             }
+
             composable(Screen.AlumniProfile.route) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
@@ -106,3 +115,4 @@ fun AlumniGraph(mainNavController: NavHostController) {
         }
     }
 }
+
