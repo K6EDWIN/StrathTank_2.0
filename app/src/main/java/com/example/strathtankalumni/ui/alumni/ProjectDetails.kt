@@ -33,7 +33,7 @@ val dummyProject = Project(
     requiredSkills = listOf("Kotlin", "Jetpack Compose", "Firebase", "MVVM"),
     members = listOf("Alice", "Bob")
 )
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectDetailsScreen(navController: NavController, project: Project = dummyProject) { // Added dummyProject as default
     Scaffold(

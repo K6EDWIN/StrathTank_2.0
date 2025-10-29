@@ -23,7 +23,7 @@ data class CollaborationRequestItem(
     val creatorName: String
 )
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RequestsScreen(
     navController: NavController,
