@@ -1,5 +1,6 @@
 package com.example.strathtankalumni.ui.alumni
 
+import com.example.strathtankalumni.navigation.Screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 
 // Dummy Data Class for a Project/Collaboration
 data class CollaborationItem(
@@ -23,17 +25,15 @@ data class CollaborationItem(
 
 val dummyCollaborations = listOf(
     CollaborationItem("Project title", "Short description about the project", listOf("#Fundraiser", "#TechProject"), "Name"),
-    CollaborationItem("Project title", "Short description about the project", listOf("#Fundraiser", "#TechProject"), "Name"),
-    CollaborationItem("Project title", "Short description about the project", listOf("#Fundraiser", "#TechProject"), "Name"),
-    CollaborationItem("Project title", "Short description about the project", listOf("#Fundraiser", "#TechProject"), "Name"),
+    CollaborationItem("E-commerce App", "A full-featured app with cart and checkout", listOf("#Android", "#Compose"), "Alice"),
+    CollaborationItem("Health Tracker", "Tracks fitness and wellness goals", listOf("#Health", "#MobileApp"), "Bob"),
+    CollaborationItem("Crowdfunding Portal", "Platform for startup fundraising", listOf("#Finance", "#WebApp"), "Clara"),
 )
 
-
 @Composable
-fun CollaborationHubScreen() {
+fun CollaborationHubScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
-            // Using a simple Column for the header content (Title + Search/Filters)
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -52,8 +52,8 @@ fun CollaborationHubScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
-                        value = "", // State for search query
-                        onValueChange = { /* Update state */ },
+                        value = "",
+                        onValueChange = { /* Update search query */ },
                         label = { Text("Search Collaborations...") },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
                         modifier = Modifier.weight(1f)
@@ -73,7 +73,6 @@ fun CollaborationHubScreen() {
                 ) {
                     TextButton(onClick = { /* Newest */ }) { Text("Newest") }
                     TextButton(onClick = { /* Most Joined */ }) { Text("Most Joined") }
-                    // Spacer to push 'Sort' to the right (if desired, based on design)
                     Spacer(modifier = Modifier.weight(1f))
                     TextButton(onClick = { /* Sort */ }) { Text("Sort") }
                 }
@@ -82,24 +81,23 @@ fun CollaborationHubScreen() {
     ) { paddingValues ->
         // 4. Collaboration Cards Grid
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2), // Two columns as per the wireframe
+            columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(16.dp),
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize(),
-            // Ensure spacing matches the wireframe layout
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(dummyCollaborations) { item ->
-                CollaborationCard(item)
+                CollaborationCard(item = item, navController = navController)
             }
         }
     }
 }
 
 @Composable
-fun CollaborationCard(item: CollaborationItem) {
+fun CollaborationCard(item: CollaborationItem, navController: NavHostController) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -137,7 +135,11 @@ fun CollaborationCard(item: CollaborationItem) {
 
             // Action Buttons
             OutlinedButton(
-                onClick = { /* View Details action */ },
+                onClick = {
+                    // Navigate to project details screen
+                    navController.navigate(Screen.ProjectDetails.route)
+
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("View Details")

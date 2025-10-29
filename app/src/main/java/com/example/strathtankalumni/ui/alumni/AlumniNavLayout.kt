@@ -2,10 +2,7 @@ package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.PersonOutline
-import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -23,7 +20,8 @@ data class NavItem(
 private val AlumniNavItems = listOf(
     NavItem(Screen.AlumniHome.route, Icons.Filled.Home, "Home"),
     NavItem(Screen.AlumniProjects.route, Icons.Filled.WorkOutline, "Projects"),
-    NavItem(Screen.AlumniMessages.route, Icons.Filled.MailOutline, "Messages"),
+    NavItem(Screen.CollaborationHub.route, Icons.Filled.Group, "Hub"),
+    NavItem(Screen.Requests.route, Icons.Filled.ListAlt, "Requests"),
     NavItem(Screen.AlumniProfile.route, Icons.Filled.PersonOutline, "Profile")
 )
 
@@ -40,6 +38,8 @@ fun AlumniNavLayout(
         Screen.AlumniProjects.route -> "Projects"
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
+        Screen.Requests.route -> "Requests"
+        Screen.CollaborationHub.route -> "Collaboration Hub"
         else -> ""
     }
 
@@ -80,12 +80,7 @@ fun AlumniNavLayout(
                                 }
                             }
                         },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
-                            )
-                        },
+                        icon = { Icon(item.icon, contentDescription = item.label) },
                         label = { Text(item.label) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,

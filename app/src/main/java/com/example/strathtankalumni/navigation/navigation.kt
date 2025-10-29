@@ -1,6 +1,5 @@
 package com.example.strathtankalumni.navigation
 
-
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -11,19 +10,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.strathtankalumni.ui.admin.AdminDashboardScreen
-import com.example.strathtankalumni.ui.alumni.AlumniHomeScreen
-import com.example.strathtankalumni.ui.alumni.AlumniMessagesScreen
-import com.example.strathtankalumni.ui.alumni.AlumniNavLayout
-import com.example.strathtankalumni.ui.alumni.AlumniProfileScreen
-import com.example.strathtankalumni.ui.alumni.AlumniProjectsScreen
-import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
-import com.example.strathtankalumni.ui.auth.LoginScreen
-import com.example.strathtankalumni.ui.auth.RegistrationScreen
-import com.example.strathtankalumni.ui.auth.WelcomeScreen
-import com.example.strathtankalumni.ui.alumni.AlumniNotificationsScreen
+import com.example.strathtankalumni.ui.alumni.*
+import com.example.strathtankalumni.ui.auth.*
 
+/* ------------------------------
+   Define all routes centrally
+--------------------------------*/
 sealed class Screen(val route: String) {
 
+    // Auth Screens
     object Welcome : Screen("welcome_screen")
     object Login : Screen("login_screen")
     object Register : Screen("registration_screen")
@@ -34,12 +29,20 @@ sealed class Screen(val route: String) {
     object AlumniProjects : Screen("alumni_projects_screen")
     object AlumniMessages : Screen("alumni_messages_screen")
     object AlumniProfile : Screen("alumni_profile_screen")
-    object AlumniNotifications : Screen("alumni_notifications_screen") // <-- ADDED
+    object AlumniNotifications : Screen("alumni_notifications_screen")
+
+    // Additional Alumni Routes
+    object Requests : Screen("requests_screen")
+    object CollaborationHub : Screen("collaboration_hub_screen")
+    object ProjectDetails : Screen("project_details_screen") // ✅ Added this line
 
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 }
 
+/* ------------------------------
+   Root Navigation Host
+--------------------------------*/
 @Composable
 fun AppNavHost(navController: NavHostController) {
     NavHost(
@@ -47,36 +50,33 @@ fun AppNavHost(navController: NavHostController) {
         startDestination = Screen.Welcome.route
     ) {
         // AUTH SCREENS
-        composable(Screen.Welcome.route) {
-            WelcomeScreen(navController = navController)
-        }
-        composable(Screen.Login.route) {
-            LoginScreen(navController = navController)
-        }
-        composable(Screen.Register.route) {
-            RegistrationScreen(navController = navController)
-        }
-        composable(Screen.ForgotPassword.route) {
-            ForgotPasswordScreen(navController = navController)
-        }
+        composable(Screen.Welcome.route) { WelcomeScreen(navController = navController) }
+        composable(Screen.Login.route) { LoginScreen(navController = navController) }
+        composable(Screen.Register.route) { RegistrationScreen(navController = navController) }
+        composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController = navController) }
 
-
+        // ALUMNI FLOW (Nested Graph)
         composable(Screen.AlumniHome.route) {
             AlumniGraph(mainNavController = navController)
         }
+
+        // ADMIN
         composable(Screen.AdminHome.route) {
             AdminDashboardScreen(navController = navController)
         }
 
-
+        // Notifications (Global)
         composable(Screen.AlumniNotifications.route) {
             AlumniNotificationsScreen(navController = navController)
         }
     }
 }
+
+/* ------------------------------
+   Alumni Nested Navigation
+--------------------------------*/
 @Composable
 fun AlumniGraph(mainNavController: NavHostController) {
-
     val alumniNavController = rememberNavController()
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -86,22 +86,16 @@ fun AlumniGraph(mainNavController: NavHostController) {
         navController = alumniNavController,
         currentRoute = currentRoute
     ) { navController, paddingValues ->
+
         NavHost(
             navController = navController,
             startDestination = Screen.AlumniHome.route,
-            modifier = Modifier.padding(paddingValues) // Apply scaffold padding
+            modifier = Modifier.padding(paddingValues)
         ) {
-            composable(Screen.AlumniHome.route) {
-                AlumniHomeScreen(navController = navController)
-            }
-            composable(Screen.AlumniProjects.route) {
-                AlumniProjectsScreen(navController = navController)
-            }
-            composable(Screen.AlumniMessages.route) {
-                AlumniMessagesScreen(navController = navController)
-            }
-
-            // Pass both nav controllers to the Profile Screen
+            // Primary Alumni Routes
+            composable(Screen.AlumniHome.route) { AlumniHomeScreen(navController = navController) }
+            composable(Screen.AlumniProjects.route) { AlumniProjectsScreen(navController = navController) }
+            composable(Screen.AlumniMessages.route) { AlumniMessagesScreen(navController = navController) }
             composable(Screen.AlumniProfile.route) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
@@ -109,6 +103,14 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 )
             }
 
+            // Additional Alumni Routes
+            composable(Screen.Requests.route) { RequestsScreen(navController = navController) }
+            composable(Screen.CollaborationHub.route) { CollaborationHubScreen(navController = navController) }
+
+            // ✅ Added route for the Project Details screen
+            composable(Screen.ProjectDetails.route) {
+                ProjectDetailsScreen(navController = navController)
+            }
         }
     }
 }
