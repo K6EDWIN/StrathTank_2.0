@@ -1,11 +1,10 @@
-// File: com/example/strathtankalumni/navigation/AppNavHost.kt
 package com.example.strathtankalumni.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember // 👈✅ ADD THIS IMPORT
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -20,8 +19,8 @@ import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
 import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
-import java.net.URLDecoder // 👈✅ ADD THIS IMPORT
-import java.nio.charset.StandardCharsets // 👈✅ ADD THIS IMPORT
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 // ------------------ ROUTES ------------------ //
 sealed class Screen(val route: String) {
@@ -44,6 +43,11 @@ sealed class Screen(val route: String) {
     object ProjectView : Screen("project_view/{title}/{description}") {
         fun createRoute(title: String, description: String): String =
             "project_view/${title}/${description}"
+    }
+
+    // 👈✅ CHANGE 1: Add the new Direct Message route
+    object DirectMessage : Screen("direct_message/{userName}") {
+        fun createRoute(userName: String): String = "direct_message/$userName"
     }
 }
 
@@ -73,6 +77,19 @@ fun AppNavHost(navController: NavHostController) {
         // Global notifications
         composable(Screen.AlumniNotifications.route) {
             AlumniNotificationsScreen(navController = navController)
+        }
+
+        // 👈✅ CHANGE 2: Add the DM screen route HERE (outside the AlumniGraph)
+        // This ensures it has no bottom navigation bar.
+        composable(
+            route = Screen.DirectMessage.route,
+            arguments = listOf(navArgument("userName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("userName") ?: "Chat"
+            DirectMessageScreen(
+                navController = navController,
+                userName = userName
+            )
         }
     }
 }
@@ -105,8 +122,14 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 )
             }
 
+            // 👈✅ CHANGE 3: Update this composable call
+            // Pass mainNavController (to navigate *out* to the DM screen)
+            // Pass paddingValues (to respect the Scaffold's padding)
             composable(Screen.AlumniMessages.route) {
-                AlumniMessagesScreen(navController)
+                AlumniMessagesScreen(
+                    navController = mainNavController,
+                    paddingValues = paddingValues
+                )
             }
 
             composable(Screen.AlumniProfile.route) {
@@ -122,11 +145,9 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     navArgument("description") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                // 1. Get arguments
                 val title = backStackEntry.arguments?.getString("title") ?: ""
                 val description = backStackEntry.arguments?.getString("description") ?: ""
 
-                // 2. Decode them (this is crucial)
                 val decodedTitle = remember(title) {
                     URLDecoder.decode(title, StandardCharsets.UTF_8.toString())
                 }
@@ -134,7 +155,6 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     URLDecoder.decode(description, StandardCharsets.UTF_8.toString())
                 }
 
-                // 3. Call your new screen and pass the back action
                 ProjectViewScreen(
                     title = decodedTitle,
                     description = decodedDescription,

@@ -393,7 +393,7 @@ private fun ProfileSection(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class) // 👈✅ ADDED THIS for FlowRow
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FlowRowLayout(
     items: List<String>,
