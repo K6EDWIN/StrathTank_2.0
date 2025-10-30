@@ -71,6 +71,7 @@ dependencies {
 
     // ✅ 5. Navigation
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.ui.text)
 
     // ✅ 6. Testing
     testImplementation(libs.junit)

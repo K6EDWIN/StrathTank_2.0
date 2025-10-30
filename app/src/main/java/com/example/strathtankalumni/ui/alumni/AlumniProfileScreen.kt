@@ -7,7 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalIndication // 👈✅ ADD THIS IMPORT
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource // 👈✅ ADD THIS IMPORT
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -120,7 +122,13 @@ fun AlumniProfileScreen(
                     .size(120.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFF1F3F4))
-                    .clickable { launcher.launch("image/*") },
+                    // ✅ --- FIX 1 ---
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { launcher.launch("image/*") }
+                    ),
+                // ✅ --- END OF FIX ---
                 contentAlignment = Alignment.Center
             ) {
                 if (!currentUser?.profilePhotoUrl.isNullOrEmpty()) {
@@ -219,11 +227,17 @@ fun AlumniProfileScreen(
                                 color = Color(0xFF0A66C2),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable {
-                                        val intent =
-                                            Intent(Intent.ACTION_VIEW, Uri.parse(linkedinUrl))
-                                        context.startActivity(intent)
-                                    }
+                                    // ✅ --- FIX 2 ---
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = LocalIndication.current,
+                                        onClick = {
+                                            val intent =
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(linkedinUrl))
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                // ✅ --- END OF FIX ---
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(onClick = { editingLinkedIn = true }) {
@@ -315,9 +329,16 @@ private fun ContactRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(enabled = onClick != null) {
-                onClick?.invoke()
-            },
+            // ✅ --- FIX 3 ---
+            .clickable(
+                enabled = onClick != null,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = LocalIndication.current,
+                onClick = {
+                    onClick?.invoke()
+                }
+            ),
+        // ✅ --- END OF FIX ---
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -372,49 +393,26 @@ private fun ProfileSection(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class) // 👈✅ ADDED THIS for FlowRow
 @Composable
 fun FlowRowLayout(
     items: List<String>,
     onRemove: (String) -> Unit
 ) {
-    Column {
-        var row = mutableListOf<String>()
-        var currentRowWidth = 0.dp
-
-        items.forEach { item ->
-            if (currentRowWidth + 100.dp > 320.dp) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    row.forEach { skill ->
-                        AssistChip(
-                            onClick = { onRemove(skill) },
-                            label = { Text(skill) },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = Color(0xFFE0E0E0)
-                            ),
-                            modifier = Modifier.padding(end = 6.dp, bottom = 6.dp)
-                        )
-                    }
-                }
-                row.clear()
-                currentRowWidth = 0.dp
-            }
-            row.add(item)
-            currentRowWidth += 100.dp
-        }
-
-        if (row.isNotEmpty()) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                row.forEach { skill ->
-                    AssistChip(
-                        onClick = { onRemove(skill) },
-                        label = { Text(skill) },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = Color(0xFFE0E0E0)
-                        ),
-                        modifier = Modifier.padding(end = 6.dp, bottom = 6.dp)
-                    )
-                }
-            }
+    // ✅ Replaced custom implementation with standard FlowRow
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items.forEach { skill ->
+            AssistChip(
+                onClick = { onRemove(skill) },
+                label = { Text(skill) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = Color(0xFFE0E0E0)
+                ),
+            )
         }
     }
 }

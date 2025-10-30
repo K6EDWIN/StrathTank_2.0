@@ -187,7 +187,11 @@ class AuthViewModel : ViewModel() {
             try {
                 val bucketUrl = "gs://strathtankalumniapp.firebasestorage.app"
                 val storage = FirebaseStorage.getInstance(bucketUrl)
-                val storageRef = storage.reference.child("profile_photos/${user.uid}.jpg")
+                // ✅ NEW upload
+                val storageRef = storage.reference
+                    .child("user_photos") // Matches the rule
+                    .child(user.uid)      // Matches the {userId}
+                    .child("profile_photo.jpg") // Example {fileName}
                 Log.d("AuthViewModel", "Starting upload to: ${storageRef.path} (uri=${uri})")
                 try {
                     storageRef.putFile(uri).await()
