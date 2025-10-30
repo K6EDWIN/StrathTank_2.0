@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.R
+import com.example.strathtankalumni.navigation.Screen
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +31,7 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // 🔜 Navigate to Add Project Screen
+                    navController.navigate(Screen.AlumniAddProjects.route)
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White

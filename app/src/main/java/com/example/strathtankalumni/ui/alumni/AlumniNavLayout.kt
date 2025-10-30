@@ -45,25 +45,28 @@ fun AlumniNavLayout(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White
-                ),
-                actions = {
-                    if (currentRoute == Screen.AlumniHome.route) {
-                        IconButton(onClick = {
-                            mainNavController.navigate(Screen.AlumniNotifications.route)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notifications",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+            // Hide topBar for screens that have their own topBar (like AddProjects)
+            if (currentRoute != Screen.AlumniAddProjects.route) {
+                CenterAlignedTopAppBar(
+                    title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.White
+                    ),
+                    actions = {
+                        if (currentRoute == Screen.AlumniHome.route) {
+                            IconButton(onClick = {
+                                mainNavController.navigate(Screen.AlumniNotifications.route)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {

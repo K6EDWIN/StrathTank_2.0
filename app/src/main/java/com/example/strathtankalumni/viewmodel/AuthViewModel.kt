@@ -54,6 +54,26 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    // ✅ Check if user is already logged in (for auto-login on app start)
+    suspend fun checkLoggedInUser(): String? {
+        val firebaseUser = auth.currentUser ?: return null
+        
+        // Verify email is verified
+        if (!firebaseUser.isEmailVerified) {
+            auth.signOut()
+            return null
+        }
+        
+        return try {
+            val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
+            val user = doc.toObject(User::class.java)
+            _currentUser.value = user
+            user?.role // Return role for navigation
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun registerUser(user: User, password: String) {
         if (user.email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty.")
