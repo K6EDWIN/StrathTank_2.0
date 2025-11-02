@@ -1,29 +1,34 @@
 package com.example.strathtankalumni.navigation
 
-
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.strathtankalumni.ui.admin.AdminDashboardScreen
-import com.example.strathtankalumni.ui.alumni.AlumniHomeScreen
-import com.example.strathtankalumni.ui.alumni.AlumniMessagesScreen
-import com.example.strathtankalumni.ui.alumni.AlumniNavLayout
-import com.example.strathtankalumni.ui.alumni.AlumniProfileScreen
-import com.example.strathtankalumni.ui.alumni.AlumniProjectsScreen
+import com.example.strathtankalumni.ui.alumni.*
 import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
 import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
-import com.example.strathtankalumni.ui.alumni.AlumniNotificationsScreen
+import com.example.strathtankalumni.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
 
+// ------------------ ROUTES ------------------ //
 sealed class Screen(val route: String) {
-
     object Welcome : Screen("welcome_screen")
     object Login : Screen("login_screen")
     object Register : Screen("registration_screen")
@@ -32,51 +37,83 @@ sealed class Screen(val route: String) {
     // Alumni Screens
     object AlumniHome : Screen("alumni_home_screen")
     object AlumniProjects : Screen("alumni_projects_screen")
+    object AlumniAddProjects : Screen("alumni_add_projects_screen")
     object AlumniMessages : Screen("alumni_messages_screen")
     object AlumniProfile : Screen("alumni_profile_screen")
-    object AlumniNotifications : Screen("alumni_notifications_screen") // <-- ADDED
+    object AlumniNotifications : Screen("alumni_notifications_screen")
 
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 }
 
+// ------------------ MAIN APP NAVIGATION ------------------ //
 @Composable
 fun AppNavHost(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Welcome.route
-    ) {
-        // AUTH SCREENS
-        composable(Screen.Welcome.route) {
-            WelcomeScreen(navController = navController)
+    val authViewModel: AuthViewModel = viewModel()
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    
+    // Check if user is already logged in on app start
+    LaunchedEffect(Unit) {
+        delay(100) // Small delay to ensure Firebase is initialized
+        val userRole = authViewModel.checkLoggedInUser()
+        startDestination = if (userRole != null) {
+            when (userRole) {
+                "alumni" -> Screen.AlumniHome.route
+                "admin" -> Screen.AdminHome.route
+                else -> Screen.Welcome.route
+            }
+        } else {
+            Screen.Welcome.route
         }
-        composable(Screen.Login.route) {
-            LoginScreen(navController = navController)
+    }
+    
+    // Show loading indicator while checking auth, then show NavHost
+    if (startDestination == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
-        composable(Screen.Register.route) {
-            RegistrationScreen(navController = navController)
-        }
-        composable(Screen.ForgotPassword.route) {
-            ForgotPasswordScreen(navController = navController)
-        }
+    } else {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination!!
+        ) {
+            // AUTH SCREENS
+            composable(Screen.Welcome.route) {
+                WelcomeScreen(navController = navController)
+            }
+            composable(Screen.Login.route) {
+                LoginScreen(navController = navController)
+            }
+            composable(Screen.Register.route) {
+                RegistrationScreen(navController = navController)
+            }
+            composable(Screen.ForgotPassword.route) {
+                ForgotPasswordScreen(navController = navController)
+            }
 
+            // ALUMNI SCREENS
+            composable(Screen.AlumniHome.route) {
+                AlumniGraph(mainNavController = navController)
+            }
 
-        composable(Screen.AlumniHome.route) {
-            AlumniGraph(mainNavController = navController)
-        }
-        composable(Screen.AdminHome.route) {
-            AdminDashboardScreen(navController = navController)
-        }
+            // ADMIN SCREEN
+            composable(Screen.AdminHome.route) {
+                AdminDashboardScreen(navController = navController)
+            }
 
-
-        composable(Screen.AlumniNotifications.route) {
-            AlumniNotificationsScreen(navController = navController)
+            composable(Screen.AlumniNotifications.route) {
+                AlumniNotificationsScreen(navController = navController)
+            }
         }
     }
 }
+
+// ------------------ ALUMNI NAV GRAPH ------------------ //
 @Composable
 fun AlumniGraph(mainNavController: NavHostController) {
-
     val alumniNavController = rememberNavController()
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -89,26 +126,40 @@ fun AlumniGraph(mainNavController: NavHostController) {
         NavHost(
             navController = navController,
             startDestination = Screen.AlumniHome.route,
-            modifier = Modifier.padding(paddingValues) // Apply scaffold padding
+            modifier = Modifier.padding(paddingValues)
         ) {
+            // ✅ Normal screens
             composable(Screen.AlumniHome.route) {
                 AlumniHomeScreen(navController = navController)
             }
+
+            // ✅ Projects screen — pass padding explicitly
             composable(Screen.AlumniProjects.route) {
-                AlumniProjectsScreen(navController = navController)
+                AlumniProjectsScreen(
+                    navController = navController,
+                    padding = paddingValues
+                )
             }
+
+            composable(Screen.AlumniAddProjects.route) {
+                AlumniAddProjectsPage(
+                    navController = navController,
+                    padding = paddingValues
+                )
+            }
+
+            // ✅ Other screens remain unaffected
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(navController = navController)
             }
 
-            // Pass both nav controllers to the Profile Screen
             composable(Screen.AlumniProfile.route) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
                     alumniNavController = navController
                 )
             }
-
         }
     }
 }
+

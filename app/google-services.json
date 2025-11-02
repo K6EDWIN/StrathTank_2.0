@@ -12,7 +12,12 @@
           "package_name": "com.example.strathtankalumni"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "754937251757-rvra21on271drj22am9e8godagn8o8ht.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC-gZw4eo8tHSaxHbuVVxcjjJb4zwPmr-M"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754937251757-rvra21on271drj22am9e8godagn8o8ht.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

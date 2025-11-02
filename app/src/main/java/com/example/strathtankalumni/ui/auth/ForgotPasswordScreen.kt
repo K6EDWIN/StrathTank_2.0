@@ -14,8 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.FirebaseAuth
 
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
@@ -27,7 +26,7 @@ private sealed class ResetStage {
 
 @Composable
 fun ForgotPasswordScreen(navController: NavHostController) {
-    val auth = Firebase.auth
+    val auth = FirebaseAuth.getInstance()
     val context = LocalContext.current
 
     var resetStage by remember { mutableStateOf<ResetStage>(ResetStage.EMAIL_INPUT) }
