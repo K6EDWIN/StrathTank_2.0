@@ -45,7 +45,7 @@ fun AlumniNavLayout(
 
     Scaffold(
         topBar = {
-            // Hide topBar for screens that have their own topBar (like AddProjects)
+            // Hide topBar for screens that have their own topBar
             if (currentRoute != Screen.AlumniAddProjects.route) {
                 CenterAlignedTopAppBar(
                     title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },

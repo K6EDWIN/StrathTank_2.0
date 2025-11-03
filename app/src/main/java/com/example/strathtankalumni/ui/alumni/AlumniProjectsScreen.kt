@@ -22,11 +22,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.navigation.Screen
-
+import com.example.strathtankalumni.viewmodel.AuthViewModel // Import AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValues) {
+fun AlumniProjectsScreen(
+    navController: NavHostController,
+    padding: PaddingValues,
+    authViewModel: AuthViewModel
+) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -51,7 +55,7 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // 🔍 Search bar
+            //Search bar
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
@@ -63,7 +67,7 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 🏷 Filter Row
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -83,7 +87,7 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
                 item {
                     Text("Featured", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     ProjectCard(
-                        title = "AI–Powered Tutoring App",
+                        title = "AI-Powered Tutoring App",
                         description = "An innovative app using AI to personalize learning experiences for students.",
                         imageRes = R.drawable.sample_featured
                     )
@@ -95,7 +99,7 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
 
                 items(
                     listOf(
-                        Triple("Eco–Friendly Packaging Design", "Sustainable packaging solutions for a greener future, focusing on reducing waste.", R.drawable.sample_eco),
+                        Triple("Eco-Friendly Packaging Design", "Sustainable packaging solutions for a greener future, focusing on reducing waste.", R.drawable.sample_eco),
                         Triple("Mobile App for Local Farmers", "Connecting farmers directly with consumers, providing market access and fair pricing.", R.drawable.sample_farm),
                         Triple("Interactive Museum Exhibit", "An engaging exhibit using AR to bring history to life for visitors of all ages.", R.drawable.sample_museum)
                     )
@@ -107,7 +111,6 @@ fun AlumniProjectsScreen(navController: NavHostController, padding: PaddingValue
     }
 }
 
-// 🏷 Simple Filter Chip
 @Composable
 fun FilterChip(label: String) {
     Surface(
@@ -123,7 +126,7 @@ fun FilterChip(label: String) {
     }
 }
 
-// 📋 Project Card
+
 @Composable
 fun ProjectCard(title: String, description: String, imageRes: Int) {
     Row(

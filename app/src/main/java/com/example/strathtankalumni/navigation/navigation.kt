@@ -1,6 +1,7 @@
 package com.example.strathtankalumni.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,7 +52,7 @@ sealed class Screen(val route: String) {
 fun AppNavHost(navController: NavHostController) {
     val authViewModel: AuthViewModel = viewModel()
     var startDestination by remember { mutableStateOf<String?>(null) }
-    
+
     // Check if user is already logged in on app start
     LaunchedEffect(Unit) {
         delay(100) // Small delay to ensure Firebase is initialized
@@ -66,7 +67,7 @@ fun AppNavHost(navController: NavHostController) {
             Screen.Welcome.route
         }
     }
-    
+
     // Show loading indicator while checking auth, then show NavHost
     if (startDestination == null) {
         Box(
@@ -114,10 +115,13 @@ fun AppNavHost(navController: NavHostController) {
 // ------------------ ALUMNI NAV GRAPH ------------------ //
 @Composable
 fun AlumniGraph(mainNavController: NavHostController) {
+    // Get the AuthViewModel instance again for use in sub-graphs
+    val authViewModel: AuthViewModel = viewModel()
     val alumniNavController = rememberNavController()
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
+    // AlumniNavLayout is assumed to be a Scaffold or similar that provides padding
     AlumniNavLayout(
         mainNavController = mainNavController,
         navController = alumniNavController,
@@ -128,27 +132,28 @@ fun AlumniGraph(mainNavController: NavHostController) {
             startDestination = Screen.AlumniHome.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // ✅ Normal screens
+
             composable(Screen.AlumniHome.route) {
                 AlumniHomeScreen(navController = navController)
             }
 
-            // ✅ Projects screen — pass padding explicitly
+            // Projects screen
             composable(Screen.AlumniProjects.route) {
                 AlumniProjectsScreen(
                     navController = navController,
-                    padding = paddingValues
+                    padding = paddingValues,
+                    authViewModel = authViewModel
                 )
             }
 
+            //Alumni Add Projects page
             composable(Screen.AlumniAddProjects.route) {
                 AlumniAddProjectsPage(
                     navController = navController,
-                    padding = paddingValues
+                    authViewModel = authViewModel
                 )
             }
 
-            // ✅ Other screens remain unaffected
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(navController = navController)
             }
@@ -162,4 +167,3 @@ fun AlumniGraph(mainNavController: NavHostController) {
         }
     }
 }
-
