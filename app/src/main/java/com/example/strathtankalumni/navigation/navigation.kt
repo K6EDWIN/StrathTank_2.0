@@ -1,6 +1,5 @@
 package com.example.strathtankalumni.navigation
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +19,7 @@ import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 // ------------------ ROUTES ------------------ //
@@ -39,16 +39,31 @@ sealed class Screen(val route: String) {
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 
-    // Project View Screen (with arguments)
+    // Project View Screen
     object ProjectView : Screen("project_view/{title}/{description}") {
-        fun createRoute(title: String, description: String): String =
-            "project_view/${title}/${description}"
+        fun createRoute(title: String, description: String): String {
+            val encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8.toString())
+            val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
+            return "project_view/$encodedTitle/$encodedDescription"
+        }
     }
 
-    // 👈✅ CHANGE 1: Add the new Direct Message route
-    object DirectMessage : Screen("direct_message/{userName}") {
-        fun createRoute(userName: String): String = "direct_message/$userName"
+    // Direct Message route
+    object DirectMessage : Screen("direct_message/{userName}/{otherUserId}") {
+        fun createRoute(userName: String, otherUserId: String): String {
+            val encodedUserName = URLEncoder.encode(userName, StandardCharsets.UTF_8.toString())
+            return "direct_message/$encodedUserName/$otherUserId"
+        }
     }
+
+    // Other Profile route
+    object OtherProfile : Screen("other_profile/{userId}") {
+        fun createRoute(userId: String): String {
+            return "other_profile/$userId"
+        }
+    }
+
+    object AlumniList : Screen("alumni_list_screen")
 }
 
 // ------------------ MAIN APP NAVIGATION ------------------ //
@@ -64,7 +79,7 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.Register.route) { RegistrationScreen(navController) }
         composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController) }
 
-        // Alumni graph
+        // Alumni main graph
         composable(Screen.AlumniHome.route) {
             AlumniGraph(mainNavController = navController)
         }
@@ -74,22 +89,28 @@ fun AppNavHost(navController: NavHostController) {
             AdminDashboardScreen(navController = navController)
         }
 
-        // Global notifications
-        composable(Screen.AlumniNotifications.route) {
-            AlumniNotificationsScreen(navController = navController)
-        }
-
-        // 👈✅ CHANGE 2: Add the DM screen route HERE (outside the AlumniGraph)
-        // This ensures it has no bottom navigation bar.
+        // Direct Message Screen
         composable(
             route = Screen.DirectMessage.route,
-            arguments = listOf(navArgument("userName") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userName = backStackEntry.arguments?.getString("userName") ?: "Chat"
-            DirectMessageScreen(
-                navController = navController,
-                userName = userName
+            arguments = listOf(
+                navArgument("userName") { type = NavType.StringType },
+                navArgument("otherUserId") { type = NavType.StringType }
             )
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("userName")?.let {
+                URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
+            } ?: "Chat"
+            val otherUserId = backStackEntry.arguments?.getString("otherUserId") ?: ""
+
+            if (otherUserId.isNotBlank()) {
+                DirectMessageScreen(
+                    navController = navController,
+                    userName = userName,
+                    otherUserId = otherUserId
+                )
+            } else {
+                navController.popBackStack()
+            }
         }
     }
 }
@@ -122,9 +143,6 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 )
             }
 
-            // 👈✅ CHANGE 3: Update this composable call
-            // Pass mainNavController (to navigate *out* to the DM screen)
-            // Pass paddingValues (to respect the Scaffold's padding)
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(
                     navController = mainNavController,
@@ -138,6 +156,35 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     alumniNavController = navController
                 )
             }
+
+            composable(Screen.AlumniNotifications.route) {
+                AlumniNotificationsScreen(navController = navController)
+            }
+
+            composable(Screen.AlumniList.route) {
+                AlumniListScreen(navController = navController)
+            }
+
+            composable(
+                route = Screen.OtherProfile.route,
+                arguments = listOf(
+                    navArgument("userId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId")
+
+                if (!userId.isNullOrBlank()) {
+                    // ✅ MODIFIED: Pass mainNavController
+                    OtherUserProfileScreen(
+                        userId = userId,
+                        navController = navController, // for back button
+                        mainNavController = mainNavController // for navigating to messages
+                    )
+                } else {
+                    navController.popBackStack()
+                }
+            }
+
             composable(
                 route = Screen.ProjectView.route,
                 arguments = listOf(

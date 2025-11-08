@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -40,60 +41,77 @@ fun AlumniNavLayout(
         Screen.AlumniProjects.route -> "Projects"
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
+        Screen.AlumniList.route -> ""
         else -> ""
     }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White
-                ),
-                actions = {
-                    if (currentRoute == Screen.AlumniHome.route) {
-                        IconButton(onClick = {
-                            mainNavController.navigate(Screen.AlumniNotifications.route)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notifications",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+            if (AlumniNavItems.any { it.route == currentRoute }) {
+                CenterAlignedTopAppBar(
+                    title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.White
+                    ),
+                    actions = {
+                        if (currentRoute == Screen.AlumniHome.route) {
+
+                            IconButton(onClick = {
+                                navController.navigate(Screen.AlumniList.route)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.People,
+                                    contentDescription = "Find Alumni",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            // ✅ MODIFIED: Use 'navController' here
+                            IconButton(onClick = {
+                                navController.navigate(Screen.AlumniNotifications.route)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         },
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
-                AlumniNavItems.forEach { item ->
-                    val selected = currentRoute == item.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            if (currentRoute != item.route) {
-                                navController.navigate(item.route) {
-                                    popUpTo(Screen.AlumniHome.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+            if (AlumniNavItems.any { it.route == currentRoute }) {
+                NavigationBar(containerColor = Color.White) {
+                    AlumniNavItems.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Screen.AlumniHome.route) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = { Text(item.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        label = { Text(item.label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    )
+                    }
                 }
             }
         }
