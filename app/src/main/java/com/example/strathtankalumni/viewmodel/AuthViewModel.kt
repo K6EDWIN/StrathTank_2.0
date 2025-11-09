@@ -90,7 +90,7 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Idle
     }
 
-    // --- Authentication & Profile Management Functions ---
+    // --- Authentication & Profile Management Functions (omitted for brevity) ---
 
     /**
      * Registers a new user with Firebase Authentication and stores their details in Firestore.
@@ -282,26 +282,63 @@ class AuthViewModel : ViewModel() {
         Log.d("AuthViewModel", "User signed out successfully.")
     }
 
-    // --- Project Management Functions ---
+    // --- Project Media Management Functions (MODIFIED/NEW) ---
 
     /**
-     * Uploads the image to Firebase Storage.
+     * Uploads the main project cover image to Firebase Storage, using secure path.
      */
-    private suspend fun uploadImage(imageUri: Uri?): String? = withContext(Dispatchers.IO) {
+    private suspend fun uploadImage(imageUri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
         if (imageUri == null) return@withContext null
 
         return@withContext try {
-            val imageRef = storage.reference.child("project_images/${UUID.randomUUID()}")
+            // FIX 1: Use secure path projects/$userId/
+            val imageRef = storage.reference.child("projects/$userId/cover_${UUID.randomUUID()}")
             imageRef.putFile(imageUri).await()
             imageRef.downloadUrl.await().toString()
         } catch (e: Exception) {
-            Log.e("AuthViewModel", "Project image upload failed: ${e.message}", e)
+            Log.e("AuthViewModel", "Project cover image upload failed: ${e.message}", e)
             null
         }
     }
 
     /**
-     * Saves a new project to Firestore.
+     * MODIFIED: Uploads multiple project images to Firebase Storage, using secure path.
+     */
+    private suspend fun uploadMultipleImages(imageUris: List<Uri>, userId: String): List<String> = withContext(Dispatchers.IO) {
+        val urls = mutableListOf<String>()
+        try {
+            imageUris.forEach { uri ->
+                // FIX 2: Use secure path projects/$userId/
+                val imageRef = storage.reference.child("projects/$userId/media_${UUID.randomUUID()}")
+                imageRef.putFile(uri).await()
+                val photoUrl = imageRef.downloadUrl.await().toString()
+                urls.add(photoUrl)
+            }
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Multiple project image upload failed: ${e.message}", e)
+        }
+        return@withContext urls
+    }
+
+    /**
+     * MODIFIED: Uploads a single PDF file to Firebase Storage, using secure path.
+     */
+    private suspend fun uploadPdf(pdfUri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
+        if (pdfUri == null) return@withContext null
+        return@withContext try {
+            // FIX 3: Use secure path projects/$userId/
+            val pdfRef = storage.reference.child("projects/$userId/doc_${UUID.randomUUID()}.pdf")
+            pdfRef.putFile(pdfUri).await()
+            pdfRef.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Project PDF upload failed: ${e.message}", e)
+            null
+        }
+    }
+
+
+    /**
+     * Saves a new project to Firestore. (MODIFIED)
      */
     fun saveProject(
         title: String,
@@ -310,6 +347,8 @@ class AuthViewModel : ViewModel() {
         githubUrl: String,
         projectType: String,
         imageUri: Uri?,
+        mediaImageUris: List<Uri>, // NEW
+        pdfUri: Uri?, // NEW
         categories: List<String>,
         programmingLanguages: List<String>,
         databaseUsed: List<String>,
@@ -326,12 +365,20 @@ class AuthViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val imageUrl = uploadImage(imageUri)
+                // 1. Upload main cover image - PASS userId
+                val imageUrl = uploadImage(imageUri, userId)
                 if (imageUri != null && imageUrl == null) {
-                    _projectState.value = ProjectState.Error("Failed to upload project image.")
+                    _projectState.value = ProjectState.Error("Failed to upload project cover image.")
                     onResult(false)
                     return@launch
                 }
+
+                // 2. Upload multiple media images - PASS userId
+                val mediaImageUrls = uploadMultipleImages(mediaImageUris, userId)
+
+                // 3. Upload single PDF - PASS userId
+                val pdfUrl = uploadPdf(pdfUri, userId)
+
 
                 val newProject = Project(
                     userId = userId,
@@ -344,14 +391,16 @@ class AuthViewModel : ViewModel() {
                     categories = categories,
                     programmingLanguages = programmingLanguages,
                     databaseUsed = databaseUsed,
-                    techStack = techStack
+                    techStack = techStack,
+                    mediaImageUrls = mediaImageUrls, // SAVE NEW DATA
+                    pdfUrl = pdfUrl ?: "" // SAVE NEW DATA
                 )
 
                 firestore.collection("projects").add(newProject).await()
                 _projectState.value = ProjectState.Success("Project saved successfully!")
                 onResult(true)
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Failed to save project or upload image: ${e.message}", e)
+                Log.e("AuthViewModel", "Failed to save project or upload media: ${e.message}", e)
                 _projectState.value = ProjectState.Error(e.localizedMessage ?: "Failed to save project.")
                 onResult(false)
             }

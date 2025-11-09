@@ -25,10 +25,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import com.example.strathtankalumni.viewmodel.ProjectState // Import ProjectState
+import com.example.strathtankalumni.viewmodel.ProjectState
+import java.io.File // Import for file name utility
 
 // List of available categories/tags
 private val allTags = listOf(
@@ -54,7 +56,7 @@ private val AllTechStacks = listOf(
     "Arduino", "Raspberry Pi", "RTOS", // Embedded
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) // ADDED ExperimentalLayoutApi
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AlumniAddProjectsPage(
     navController: NavHostController,
@@ -69,7 +71,11 @@ fun AlumniAddProjectsPage(
     var projectUrl by remember { mutableStateOf("") }
     var githubUrl by remember { mutableStateOf("") }
     var projectType by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    var imageUri by remember { mutableStateOf<Uri?>(null) } // Main cover image
+    var mediaImageUris by remember { mutableStateOf(emptyList<Uri>()) } // NEW: Multiple media images
+    var pdfUri by remember { mutableStateOf<Uri?>(null) } // NEW: Single PDF file
+
     var selectedCategories by remember { mutableStateOf(emptyList<String>()) }
 
     // NEW STATE for Tech Selection
@@ -108,11 +114,37 @@ fun AlumniAddProjectsPage(
     }
 
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    // --- LAUNCHERS FOR MEDIA (MODIFIED/NEW) ---
+
+    // 1. Main Cover Image (Single)
+    val coverImagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri = uri
     }
+
+    // 2. Project Media Images (Multiple)
+    val mediaImagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        // Append new URIs to the existing list
+        mediaImageUris = mediaImageUris + uris
+    }
+
+    // 3. Project PDF (Single)
+    val pdfFilePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        // We strictly enforce PDF here, although GetContent is generic
+        if (uri != null && context.contentResolver.getType(uri)?.startsWith("application/pdf") == true) {
+            pdfUri = uri
+        } else if (uri != null) {
+            Toast.makeText(context, "Please select a valid PDF file.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // --- END LAUNCHERS ---
+
 
     LaunchedEffect(projectState) {
         when (val state = projectState) {
@@ -125,16 +157,18 @@ fun AlumniAddProjectsPage(
                 githubUrl = ""
                 projectType = ""
                 imageUri = null
+                mediaImageUris = emptyList() // Clear NEW field
+                pdfUri = null // Clear NEW field
                 selectedCategories = emptyList()
-                selectedLanguages = emptyList() // Clear new fields
-                selectedDatabases = emptyList() // Clear new fields
-                selectedTechStacks = emptyList() // Clear new fields
-                authViewModel.resetProjectState() // THIS NOW WORKS
+                selectedLanguages = emptyList()
+                selectedDatabases = emptyList()
+                selectedTechStacks = emptyList()
+                authViewModel.resetProjectState()
                 navController.popBackStack() // Go back to the previous screen (Projects list)
             }
             is ProjectState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                authViewModel.resetProjectState() // THIS NOW WORKS
+                authViewModel.resetProjectState()
             }
             else -> Unit
         }
@@ -162,10 +196,12 @@ fun AlumniAddProjectsPage(
                             githubUrl = githubUrl,
                             projectType = projectType,
                             imageUri = imageUri,
+                            mediaImageUris = mediaImageUris, // PASS NEW DATA
+                            pdfUri = pdfUri, // PASS NEW DATA
                             categories = selectedCategories,
-                            programmingLanguages = selectedLanguages, // PASS NEW DATA
-                            databaseUsed = selectedDatabases, // PASS NEW DATA
-                            techStack = selectedTechStacks, // PASS NEW DATA
+                            programmingLanguages = selectedLanguages,
+                            databaseUsed = selectedDatabases,
+                            techStack = selectedTechStacks,
                             onResult = {} // Handled by LaunchedEffect
                         )
                     } else {
@@ -198,8 +234,8 @@ fun AlumniAddProjectsPage(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Project Image Uploader
-            Text("Project Image (Optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            // --- Project Cover Image Uploader ---
+            Text("Project Cover Image (Optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -207,22 +243,107 @@ fun AlumniAddProjectsPage(
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable { imagePickerLauncher.launch("image/*") },
+                    .clickable { coverImagePickerLauncher.launch("image/*") }, // RENAMED LAUNCHER
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
                     AsyncImage(
                         model = imageUri,
-                        contentDescription = "Project Image",
+                        contentDescription = "Project Cover Image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = "Add Photo", tint = Color.Gray)
+                        Icon(Icons.Default.AddAPhoto, contentDescription = "Add Cover Photo", tint = Color.Gray)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Tap to select image", color = Color.Gray)
+                        Text("Tap to select cover image", color = Color.Gray)
                     }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- NEW: Project Media Images (Gallery) ---
+            Text("Project Gallery Images (Optional, Multiple)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Display selected images
+                mediaImageUris.forEachIndexed { index, uri ->
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    ) {
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = "Project Media $index",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // Remove button
+                        IconButton(
+                            onClick = {
+                                mediaImageUris = mediaImageUris.toMutableList().apply { removeAt(index) }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove Image", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+
+                // Add button
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                        .clickable { mediaImagePickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Image", tint = Color.Gray)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            // --- NEW: Project Documentation (PDF) ---
+            Text("Project Documentation (Optional, PDF)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .clickable { pdfFilePickerLauncher.launch("application/pdf") }
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (pdfUri != null) {
+                    val fileName = pdfUri?.lastPathSegment?.substringAfterLast("/") ?: "Selected PDF"
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF Icon", tint = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.width(8.dp))
+                    Text(fileName, modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = { pdfUri = null },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Remove PDF", tint = Color.Gray)
+                    }
+                } else {
+                    Icon(Icons.Default.AttachFile, contentDescription = "Attach PDF", tint = Color.Gray)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tap to select a single PDF file", color = Color.Gray, modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -395,7 +516,7 @@ fun AlumniAddProjectsPage(
 /**
  * Reusable Composable for displaying and managing FilterChips.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) // ADDED ExperimentalLayoutApi
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TechSelectionRow(
     availableTags: List<String>,

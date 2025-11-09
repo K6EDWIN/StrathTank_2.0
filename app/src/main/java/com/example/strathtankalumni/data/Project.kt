@@ -13,6 +13,10 @@ data class Project(
     val githubUrl: String = "",
     val projectType: String = "",
     val imageUrl: String = "",
+    // NEW FIELDS for Media
+    val mediaImageUrls: List<String> = emptyList(), // Added field for multiple gallery images
+    val pdfUrl: String = "", // Added field for documentation PDF
+    // END NEW FIELDS for Media
     val categories: List<String> = emptyList(),
     // NEW FIELDS for Tech Stack
     val programmingLanguages: List<String> = emptyList(),

@@ -2,6 +2,7 @@ package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,34 +31,46 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import com.example.strathtankalumni.data.Project
 
-// NOTE: The @OptIn(ExperimentalMaterial3Api::class) annotation is not needed here
-// since TopAppBar/Scaffold are removed.
+// NEW: Import for Intent handling
+import android.content.Intent
+import android.net.Uri
+
 
 @Composable
 fun ProjectViewScreen(
     project: Project,
     // The onBack parameter is kept but not used here, as the outer screen handles navigation.
-    // It's good practice to keep it if internal actions might need to pop the back stack.
     onBack: () -> Unit // This is no longer strictly needed in this content-only composable, but harmless.
 ) {
+    val context = LocalContext.current
     var commentText by remember { mutableStateOf("") }
     // NOTE: In a real app, isLiked and likeCount would be managed by the ViewModel/data source
     var isLiked by remember { mutableStateOf(project.isLiked) }
     var likeCount by remember { mutableStateOf(project.likes) }
 
-    // MODIFICATION: REMOVED Scaffold and TopAppBar
+    // Helper function to open a URL in a browser
+    val openUrl: (String) -> Unit = { url ->
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Handle error (e.g., no browser app found)
+        }
+    }
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .background(Color.White)
-            // Removed padding(padding) since Scaffold is gone.
-            .padding(horizontal = 16.dp) // Apply padding directly to the content
+            .padding(horizontal = 16.dp)
     ) {
         Spacer(Modifier.height(12.dp))
-        // ---- Project Image ----
+        // ---- Project Image (Cover) ----
         Image(
             painter = rememberAsyncImagePainter(
                 ImageRequest.Builder(LocalContext.current)
@@ -80,14 +95,13 @@ fun ProjectViewScreen(
             lineHeight = 20.sp
         )
         Spacer(Modifier.height(12.dp))
-        // ---- Likes and Comments ----
+        // ---- Likes and Comments (Omitted for brevity) ----
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             IconButton(onClick = {
                 isLiked = !isLiked
-                // NOTE: This should ultimately call a ViewModel function to update the backend
                 likeCount += if (isLiked) 1 else -1
             }) {
                 Icon(
@@ -105,19 +119,33 @@ fun ProjectViewScreen(
             Text(project.commentCount.toString(), fontSize = 14.sp)
         }
         Spacer(Modifier.height(20.dp))
-        // ---- GitHub section ----
-        Text("GitHub", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        // ---- GitHub & Live Demo Section (MODIFIED to use helper) ----
+        Text("Links", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = { /* TODO: open GitHub link using project.githubUrl */ },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            // Disable button if URL is empty
-            enabled = project.githubUrl.isNotBlank()
-        ) {
-            Text("View on GitHub")
+
+        if (project.projectUrl.isNotBlank()) {
+            Button(
+                onClick = { openUrl(project.projectUrl) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("View Live Demo")
+            }
+            Spacer(Modifier.height(8.dp))
         }
-        Spacer(Modifier.height(8.dp))
+
+        if (project.githubUrl.isNotBlank()) {
+            OutlinedButton(
+                onClick = { openUrl(project.githubUrl) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("View on GitHub")
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
         OutlinedButton(
             onClick = { /* TODO: request collaboration */ },
             modifier = Modifier.fillMaxWidth(),
@@ -126,18 +154,82 @@ fun ProjectViewScreen(
             Text("Request Collaboration")
         }
         Spacer(Modifier.height(20.dp))
-        // ---- Tags ----
+        // ---- Tags (Omitted for brevity) ----
         Text("Tags", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Using techStack (based on your Project.kt fields) for a generic tag list
             val tags = project.categories + project.programmingLanguages + project.databaseUsed + project.techStack
             items(tags.distinct()) { tag ->
                 ProjectTag(tag)
             }
         }
         Spacer(Modifier.height(20.dp))
-        // ---- Comments ----
+
+        // ---- NEW: Project Media Section ----
+        Text("Project Media", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+
+        // 1. Image Gallery
+        if (project.mediaImageUrls.isNotEmpty()) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(project.mediaImageUrls) { imageUrl ->
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(imageUrl)
+                                .crossfade(true)
+                                .build()
+                        ),
+                        contentDescription = "Project Media Image",
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF0F0F0)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        } else {
+            Text("No additional media images uploaded.", color = Color.Gray)
+        }
+        Spacer(Modifier.height(16.dp))
+
+        // 2. PDF Document
+        if (project.pdfUrl.isNotBlank()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { openUrl(project.pdfUrl) }, // Open PDF in browser/viewer
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Icon(
+                        Icons.Default.PictureAsPdf,
+                        contentDescription = "PDF Icon",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "View Documentation (PDF)",
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        Icons.Default.OpenInBrowser,
+                        contentDescription = "Open Link",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        // ---- Comments (Omitted for brevity) ----
+        Spacer(Modifier.height(20.dp))
         Text("Comments", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         // Placeholder Comments
@@ -153,7 +245,7 @@ fun ProjectViewScreen(
             time = "1d"
         )
         Spacer(Modifier.height(16.dp))
-        // ---- Add Comment ----
+        // ---- Add Comment (Omitted for brevity) ----
         OutlinedTextField(
             value = commentText,
             onValueChange = { commentText = it },
@@ -161,29 +253,11 @@ fun ProjectViewScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         )
-        Spacer(Modifier.height(24.dp))
-        // ---- Project Media ----
-        Text("Project Media", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Placeholder Media
-            items(listOf("Image 1", "Image 2", "File .txt")) { item ->
-                Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF0F0F0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(item, textAlign = TextAlign.Center)
-                }
-            }
-        }
         Spacer(Modifier.height(32.dp))
     }
 }
 
-// Helper Composable for project tags
+// Helper Composable for project tags (No Change)
 @Composable
 fun ProjectTag(tag: String) {
     Card(
@@ -199,7 +273,7 @@ fun ProjectTag(tag: String) {
     }
 }
 
-// Helper Composable for comment items
+// Helper Composable for comment items (No Change)
 @Composable
 fun CommentItem(name: String, comment: String, time: String) {
     Row(
