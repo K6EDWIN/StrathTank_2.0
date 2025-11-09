@@ -15,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.strathtankalumni.ui.admin.AdminDashboardScreen
 import com.example.strathtankalumni.ui.alumni.*
 import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
@@ -42,6 +44,11 @@ sealed class Screen(val route: String) {
     object AlumniMessages : Screen("alumni_messages_screen")
     object AlumniProfile : Screen("alumni_profile_screen")
     object AlumniNotifications : Screen("alumni_notifications_screen")
+
+    // Project Detail Screen with argument - NEW
+    object AlumniProjectDetail : Screen("alumni_project_detail/{projectId}") {
+        fun createRoute(projectId: String) = "alumni_project_detail/$projectId"
+    }
 
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
@@ -91,9 +98,9 @@ fun AppNavHost(navController: NavHostController) {
             composable(Screen.Register.route) {
                 RegistrationScreen(navController = navController)
             }
-            composable(Screen.ForgotPassword.route) {
-                ForgotPasswordScreen(navController = navController)
-            }
+            //composable(Screen.ForgotPassword.route) {
+            // ForgotPasswordScreen(navController = navController)
+            //}
 
             // ALUMNI SCREENS
             composable(Screen.AlumniHome.route) {
@@ -118,14 +125,12 @@ fun AlumniGraph(mainNavController: NavHostController) {
     // Get the AuthViewModel instance again for use in sub-graphs
     val authViewModel: AuthViewModel = viewModel()
     val alumniNavController = rememberNavController()
-    val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
 
-    // AlumniNavLayout is assumed to be a Scaffold or similar that provides padding
+    // The AlumniNavLayout now internally uses the NavController to find the current route.
+    // The previous argument 'currentRoute = currentRoute' is no longer needed and was causing an error.
     AlumniNavLayout(
         mainNavController = mainNavController,
         navController = alumniNavController,
-        currentRoute = currentRoute
     ) { navController, paddingValues ->
         NavHost(
             navController = navController,
@@ -134,7 +139,8 @@ fun AlumniGraph(mainNavController: NavHostController) {
         ) {
 
             composable(Screen.AlumniHome.route) {
-                AlumniHomeScreen(navController = navController)
+                // FIX: Pass the required authViewModel instance
+                AlumniHomeScreen(navController = navController, authViewModel = authViewModel)
             }
 
             // Projects screen
@@ -143,6 +149,18 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     navController = navController,
                     padding = paddingValues,
                     authViewModel = authViewModel
+                )
+            }
+
+            // Project Detail Screen
+            composable(
+                route = Screen.AlumniProjectDetail.route,
+                arguments = listOf(navArgument("projectId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val projectId = backStackEntry.arguments?.getString("projectId")
+                AlumniProjectDetailScreen(
+                    navController = navController,
+                    projectId = projectId
                 )
             }
 

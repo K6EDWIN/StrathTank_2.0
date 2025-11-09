@@ -1,10 +1,8 @@
 package com.example.strathtankalumni.ui.auth
 
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.MailOutline
@@ -22,7 +20,6 @@ import androidx.navigation.NavHostController
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import com.example.strathtankalumni.viewmodel.AuthState
 import com.example.strathtankalumni.util.UniversityData
 import java.util.Calendar
 
@@ -33,7 +30,9 @@ fun RegistrationScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val authState by authViewModel.authState.collectAsState()
+
+    // Local state to manage loading/progress, replacing AuthState
+    var isLoading by remember { mutableStateOf(false) }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -54,20 +53,34 @@ fun RegistrationScreen(
     val years = (1980..currentYear).map { it.toString() }.reversed()
     var yearMenuExpanded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(authState) {
-        when (val state = authState) {
-            is AuthState.Success -> {
-                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                navController.navigate(Screen.Login.route) {
-                    popUpTo(Screen.Welcome.route)
+    // Removed LaunchedEffect(authState) and AuthState usage
+
+    val onRegisterClicked: () -> Unit = {
+        if (password != confirmPassword) {
+            Toast.makeText(context, "Passwords do not match.", Toast.LENGTH_SHORT).show()
+        } else {
+            isLoading = true
+            val newUser = User(
+                email = email,
+                firstName = firstName,
+                lastName = lastName,
+                country = country,
+                universityName = universityName,
+                degree = degree,
+                graduationYear = graduationYear,
+                role = role
+            )
+
+            authViewModel.registerUser(newUser, password) { success, message ->
+                isLoading = false // Stop loading regardless of result
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+                if (success) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true } // Clear back stack to welcome
+                    }
                 }
-                authViewModel.resetAuthState()
             }
-            is AuthState.Error -> {
-                Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
-                authViewModel.resetAuthState()
-            }
-            else -> Unit
         }
     }
 
@@ -136,19 +149,12 @@ fun RegistrationScreen(
 
         item {
             Button(
-                onClick = {
-                    if (password != confirmPassword) {
-                        Toast.makeText(context, "Passwords do not match.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    val newUser = User(email = email, firstName = firstName, lastName = lastName, country = country, universityName = universityName, degree = degree, graduationYear = graduationYear, role = role)
-                    authViewModel.registerUser(newUser, password)
-                },
-                enabled = authState != AuthState.Loading,
+                onClick = onRegisterClicked,
+                enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                if (authState == AuthState.Loading) {
+                if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
                     Text("Register", style = MaterialTheme.typography.titleMedium, color = Color.White)

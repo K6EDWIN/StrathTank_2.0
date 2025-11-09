@@ -8,9 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.strathtankalumni.viewmodel.AuthViewModel
 
 @Composable
-fun AlumniHomeScreen(navController: NavHostController) {
+fun AlumniHomeScreen(navController: NavHostController, authViewModel: AuthViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
