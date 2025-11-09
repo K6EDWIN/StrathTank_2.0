@@ -55,9 +55,12 @@ fun ProjectViewScreen(
     val openUrl: (String) -> Unit = { url ->
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            // Always set flags to ensure proper handling outside the app
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
-            // Handle error (e.g., no browser app found)
+            // Log or show a Toast message if opening the URL fails
+            // Toast.makeText(context, "Could not open link: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -95,7 +98,7 @@ fun ProjectViewScreen(
             lineHeight = 20.sp
         )
         Spacer(Modifier.height(12.dp))
-        // ---- Likes and Comments (Omitted for brevity) ----
+        // ---- Likes and Comments (No Change) ----
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -119,7 +122,8 @@ fun ProjectViewScreen(
             Text(project.commentCount.toString(), fontSize = 14.sp)
         }
         Spacer(Modifier.height(20.dp))
-        // ---- GitHub & Live Demo Section (MODIFIED to use helper) ----
+
+        // --- GitHub & Live Demo Section (FIX APPLIED HERE) ---
         Text("Links", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
 
@@ -137,7 +141,7 @@ fun ProjectViewScreen(
 
         if (project.githubUrl.isNotBlank()) {
             OutlinedButton(
-                onClick = { openUrl(project.githubUrl) },
+                onClick = { openUrl(project.githubUrl) }, // FIX: Use openUrl with githubUrl
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
             ) {
@@ -154,7 +158,9 @@ fun ProjectViewScreen(
             Text("Request Collaboration")
         }
         Spacer(Modifier.height(20.dp))
-        // ---- Tags (Omitted for brevity) ----
+        // --- End Links Section ---
+
+        // ---- Tags (No Change) ----
         Text("Tags", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -165,7 +171,7 @@ fun ProjectViewScreen(
         }
         Spacer(Modifier.height(20.dp))
 
-        // ---- NEW: Project Media Section ----
+        // ---- Project Media Section (No Change) ----
         Text("Project Media", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
 
@@ -228,7 +234,7 @@ fun ProjectViewScreen(
                 }
             }
         }
-        // ---- Comments (Omitted for brevity) ----
+        // ---- Comments (No Change) ----
         Spacer(Modifier.height(20.dp))
         Text("Comments", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
@@ -245,7 +251,7 @@ fun ProjectViewScreen(
             time = "1d"
         )
         Spacer(Modifier.height(16.dp))
-        // ---- Add Comment (Omitted for brevity) ----
+        // ---- Add Comment (No Change) ----
         OutlinedTextField(
             value = commentText,
             onValueChange = { commentText = it },
