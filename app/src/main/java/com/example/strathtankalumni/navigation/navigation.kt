@@ -160,7 +160,9 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 val projectId = backStackEntry.arguments?.getString("projectId")
                 AlumniProjectDetailScreen(
                     navController = navController,
-                    projectId = projectId
+                    projectId = projectId,
+                    // MODIFICATION: Pass the AuthViewModel here
+                    authViewModel = authViewModel
                 )
             }
 

@@ -43,6 +43,14 @@ sealed class ProjectsListState {
     data class Error(val message: String) : ProjectsListState()
 }
 
+// NEW: State for single project details
+sealed class ProjectDetailState {
+    object Idle : ProjectDetailState()
+    object Loading : ProjectDetailState()
+    data class Success(val project: Project) : ProjectDetailState()
+    data class Error(val message: String) : ProjectDetailState()
+}
+
 
 class AuthViewModel : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -62,6 +70,10 @@ class AuthViewModel : ViewModel() {
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser
 
+    // NEW: StateFlow for single project detail
+    private val _projectDetailState = MutableStateFlow<ProjectDetailState>(ProjectDetailState.Idle)
+    val projectDetailState: StateFlow<ProjectDetailState> = _projectDetailState
+
     // --- State Management Helpers ---
 
     /**
@@ -78,7 +90,7 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Idle
     }
 
-    // --- Authentication & Profile Management Functions (Missing functions added below) ---
+    // --- Authentication & Profile Management Functions ---
 
     /**
      * Registers a new user with Firebase Authentication and stores their details in Firestore.
@@ -366,6 +378,29 @@ class AuthViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching projects: ${e.message}", e)
                 _allProjectsState.value = ProjectsListState.Error(e.localizedMessage ?: "Failed to fetch projects.")
+            }
+        }
+    }
+
+    /**
+     * NEW: Fetches a single project by its ID.
+     */
+    fun fetchProjectById(projectId: String) {
+        viewModelScope.launch {
+            _projectDetailState.value = ProjectDetailState.Loading
+            try {
+                val document = firestore.collection("projects").document(projectId).get().await()
+
+                val project = document.toObject(Project::class.java)?.copy(id = document.id)
+
+                if (project != null) {
+                    _projectDetailState.value = ProjectDetailState.Success(project)
+                } else {
+                    _projectDetailState.value = ProjectDetailState.Error("Project not found.")
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error fetching project by ID: ${e.message}", e)
+                _projectDetailState.value = ProjectDetailState.Error(e.localizedMessage ?: "Failed to fetch project details.")
             }
         }
     }

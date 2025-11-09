@@ -28,7 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign // Import TextAlign
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -37,8 +37,17 @@ import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectsListState
-import java.util.Calendar // Import for date comparison
+import com.example.strathtankalumni.viewmodel.ProjectDetailState // NEW IMPORT
+import java.util.Calendar
 import java.util.Date
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,7 +194,6 @@ fun AlumniProjectsScreen(
                                 text = message,
                                 color = Color(0xFF666666),
                                 fontSize = 16.sp,
-                                // FIX: Use TextAlign.Center instead of Alignment.Center.toString()
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -297,13 +305,32 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
     Divider(modifier = Modifier.padding(top = 8.dp)) // Add a divider for better separation
 }
 
-// Minimal Project Detail Screen Placeholder
+// =====================================================================
+// PROJECT DETAIL SCREEN IMPLEMENTATION (Data Loader & State Manager)
+// =====================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectDetailScreen(
     navController: NavHostController,
-    projectId: String?
+    projectId: String?,
+    authViewModel: AuthViewModel
 ) {
+    val projectDetailState by authViewModel.projectDetailState.collectAsState()
+
+    // 1. Fetch data on launch
+    LaunchedEffect(projectId) {
+        if (projectId != null) {
+            // Reset state to ensure fresh loading on subsequent calls if needed
+            // NOTE: Assuming _projectDetailState is exposed or AuthViewModel has a reset function
+            // Since we don't have access to AuthViewModel's internals, using the direct value access
+            // might cause issues if it's private. This is a common pattern for ViewModel/StateFlows.
+            // If this fails, AuthViewModel must be updated to expose a reset function or ProjectDetailState.Idle
+            // via a public property. I'll remove the state reset line to avoid accessing private members.
+            authViewModel.fetchProjectById(projectId)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -320,14 +347,30 @@ fun AlumniProjectDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp), // Keep horizontal padding here for the loader/error
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Project ID: $projectId", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Project detail screen placeholder", color = Color.Gray)
+            // 2. Handle state (Loading, Error, Success)
+            when (val state = projectDetailState) {
+                is ProjectDetailState.Loading, ProjectDetailState.Idle -> {
+                    CircularProgressIndicator()
+                }
+                is ProjectDetailState.Error -> {
+                    Text(text = "Error loading project: ${state.message}", color = MaterialTheme.colorScheme.error)
+                }
+                is ProjectDetailState.Success -> {
+                    // Call the dedicated content composable, which should be in ProjectViewScreen.kt
+                    ProjectViewScreen( // RENAMED to the external composable
+                        project = state.project,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
 }
+
+// =====================================================================
+// REMOVED: ProjectDetailViewContent, ProjectTag, and CommentItem
+// These composables should be in the dedicated file ProjectViewScreen.kt
+// =====================================================================
