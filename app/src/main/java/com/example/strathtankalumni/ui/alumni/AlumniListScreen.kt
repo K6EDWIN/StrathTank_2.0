@@ -42,6 +42,7 @@ fun AlumniListScreen(
     val allAlumni by authViewModel.alumniList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
+
     LaunchedEffect(Unit) {
         authViewModel.fetchAllAlumni()
     }
@@ -64,7 +65,7 @@ fun AlumniListScreen(
                 title = { Text("Find Alumni") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") // ✅ CHANGED
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -74,14 +75,14 @@ fun AlumniListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             TextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp),
                 placeholder = { Text("Search by name or email...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 singleLine = true,

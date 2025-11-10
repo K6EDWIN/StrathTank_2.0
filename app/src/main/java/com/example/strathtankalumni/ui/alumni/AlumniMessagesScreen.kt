@@ -1,58 +1,47 @@
 package com.example.strathtankalumni.ui.alumni
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items // Import items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+// ⬇️ 1. ADD THIS IMPORT
+import androidx.compose.material3.Badge
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel // Import ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.strathtankalumni.data.MessagesViewModel // Import your ViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.strathtankalumni.R
+import com.example.strathtankalumni.data.MessagesViewModel
 import com.example.strathtankalumni.navigation.Screen
-// ✅ 1. ADD IMPORTS
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import com.example.strathtankalumni.data.Connection
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class) // Added for Badge
 @Composable
 fun AlumniMessagesScreen(
     navController: NavHostController,
     paddingValues: PaddingValues,
     viewModel: MessagesViewModel = viewModel(),
-    authViewModel: AuthViewModel = viewModel() // ✅ 2. INJECT AUTHVIEWMODEL
+    authViewModel: AuthViewModel = viewModel()
 ) {
     // ✅ 3. GET DYNAMIC USER
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -77,10 +66,12 @@ fun AlumniMessagesScreen(
     }
 
     val conversations by viewModel.conversations.collectAsState()
+    
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // Apply only bottom and horizontal padding
             .padding(paddingValues)
             .padding(horizontal = 16.dp)
     ) {
@@ -92,7 +83,7 @@ fun AlumniMessagesScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(32.dp)
         )
-        Spacer(Modifier.height(24.dp))
+        // No Spacer here - this removes the gap
 
         if (conversations.isEmpty()) {
             Box(
@@ -118,12 +109,16 @@ fun AlumniMessagesScreen(
                     val otherUser = convoWithUser.user
                     val conversation = convoWithUser.conversation
 
+                    // ⬇️ 2. PASS THE UNREAD COUNT
                     ConversationRow(
                         name = "${otherUser.firstName} ${otherUser.lastName}",
                         lastMessage = conversation.lastMessage,
                         timestamp = "now", // TODO: Format this
+                        photoUrl = otherUser.profilePhotoUrl,
+                        // This comes from the ConversationWithUser class
+                        unreadCount = convoWithUser.unreadCount,
                         onClick = {
-                            // ✅ 8. FIXED NAVIGATION ARGUMENTS
+                            // The DirectMessageScreen will call markAsRead
                             navController.navigate(
                                 Screen.DirectMessage.createRoute(
                                     userName = "${otherUser.firstName} ${otherUser.lastName}",
@@ -138,11 +133,15 @@ fun AlumniMessagesScreen(
     }
 }
 
+// ⬇️ 3. REPLACED ConversationRow
+@OptIn(ExperimentalMaterial3Api::class) // Added for Badge
 @Composable
 private fun ConversationRow(
     name: String,
     lastMessage: String,
     timestamp: String,
+    photoUrl: String?,
+    unreadCount: Int, // <-- ADDED
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -157,13 +156,22 @@ private fun ConversationRow(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                .crossfade(true)
+                .build(),
             contentDescription = "$name's profile picture",
-            modifier = Modifier.size(56.dp),
-            tint = Color.LightGray
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFF1F3F4)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.noprofile)
         )
+
         Spacer(Modifier.width(12.dp))
+
         Column(modifier = Modifier.weight(1f)) {
             Text(name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
             Text(
@@ -174,11 +182,34 @@ private fun ConversationRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
+
         Spacer(Modifier.width(8.dp))
-        Text(
-            text = timestamp,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
+
+        // --- MODIFICATION: Replaced Text with a Column ---
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(4.dp) // Space between time and badge
+        ) {
+            Text(
+                text = timestamp,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+
+            // Conditionally show the unread badge
+            if (unreadCount > 0) {
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Text(
+                        text = "$unreadCount",
+                        modifier = Modifier.padding(horizontal = 4.dp), // Add padding for 2-digit numbers
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        }
+        // --- END OF MODIFICATION ---
     }
 }

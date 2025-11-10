@@ -126,19 +126,20 @@ fun AlumniGraph(mainNavController: NavHostController) {
         mainNavController = mainNavController,
         navController = alumniNavController,
         currentRoute = currentRoute
-    ) { navController, paddingValues ->
+    ) { mainNavController, alumniNavController, paddingValues ->
         NavHost(
-            navController = navController,
+            navController = alumniNavController,
             startDestination = Screen.AlumniHome.route,
-            modifier = Modifier.padding(paddingValues)
+            // 🚀 THIS IS THE FIX: Removed .padding(paddingValues)
+            modifier = Modifier
         ) {
             composable(Screen.AlumniHome.route) {
-                AlumniHomeScreen(navController)
+                AlumniHomeScreen(alumniNavController)
             }
 
             composable(Screen.AlumniProjects.route) {
                 AlumniProjectsScreen(
-                    navController = navController,
+                    navController = alumniNavController,
                     padding = paddingValues
                 )
             }
@@ -153,16 +154,17 @@ fun AlumniGraph(mainNavController: NavHostController) {
             composable(Screen.AlumniProfile.route) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
-                    alumniNavController = navController
+                    alumniNavController = alumniNavController,
+                    paddingValues = paddingValues
                 )
             }
 
             composable(Screen.AlumniNotifications.route) {
-                AlumniNotificationsScreen(navController = navController)
+                AlumniNotificationsScreen(navController = alumniNavController)
             }
 
             composable(Screen.AlumniList.route) {
-                AlumniListScreen(navController = navController)
+                AlumniListScreen(navController = alumniNavController)
             }
 
             composable(
@@ -174,14 +176,13 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 val userId = backStackEntry.arguments?.getString("userId")
 
                 if (!userId.isNullOrBlank()) {
-                    // ✅ MODIFIED: Pass mainNavController
                     OtherUserProfileScreen(
                         userId = userId,
-                        navController = navController, // for back button
-                        mainNavController = mainNavController // for navigating to messages
+                        navController = alumniNavController,
+                        mainNavController = mainNavController
                     )
                 } else {
-                    navController.popBackStack()
+                    alumniNavController.popBackStack()
                 }
             }
 
@@ -206,7 +207,7 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     title = decodedTitle,
                     description = decodedDescription,
                     onBack = {
-                        navController.popBackStack()
+                        alumniNavController.popBackStack()
                     }
                 )
             }

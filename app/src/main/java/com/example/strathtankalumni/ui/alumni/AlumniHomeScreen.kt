@@ -14,7 +14,7 @@ fun AlumniHomeScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp) // Add some content padding
+            .padding(16.dp)
     ) {
         Text(text = "  ")
 

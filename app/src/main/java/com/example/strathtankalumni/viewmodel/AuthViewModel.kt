@@ -8,6 +8,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.strathtankalumni.data.User
+// 🚀 1. ADDED IMPORT for your new ExperienceItem data class
+import com.example.strathtankalumni.data.ExperienceItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -191,9 +193,10 @@ class AuthViewModel : ViewModel() {
     }
 
     // ✅ Update user profile fields (About, Experience, Skills, LinkedIn)
+    // 🚀 2. MODIFIED: Changed 'experience: String' to 'experience: List<ExperienceItem>'
     fun updateUserProfile(
         about: String,
-        experience: String,
+        experience: List<ExperienceItem>,
         skills: List<String>,
         linkedinUrl: String,
         onResult: (Boolean) -> Unit
@@ -205,7 +208,7 @@ class AuthViewModel : ViewModel() {
 
                 val updates = mapOf(
                     "about" to about,
-                    "experience" to experience,
+                    "experience" to experience, // This now correctly passes the list
                     "skills" to skills,
                     "linkedinUrl" to linkedinUrl
                 )

@@ -34,7 +34,8 @@ fun AlumniNavLayout(
     mainNavController: NavHostController,
     navController: NavHostController,
     currentRoute: String?,
-    content: @Composable (NavHostController, PaddingValues) -> Unit
+    // 🚀 1. MODIFIED: Added mainNavController to the content lambda
+    content: @Composable (NavHostController, NavHostController, PaddingValues) -> Unit
 ) {
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
@@ -116,6 +117,7 @@ fun AlumniNavLayout(
             }
         }
     ) { paddingValues ->
-        content(navController, paddingValues)
+        // 🚀 2. MODIFIED: Passed mainNavController to the content lambda
+        content(mainNavController, navController, paddingValues)
     }
 }

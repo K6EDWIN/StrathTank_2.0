@@ -3,23 +3,32 @@ package com.example.strathtankalumni.ui.alumni
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items // Import items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Send // Import Send icon
+// import androidx.compose.material.icons.filled.AccountCircle // No longer needed here
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel // Import ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.strathtankalumni.data.MessagesViewModel // Import your ViewModel
-import com.example.strathtankalumni.viewmodel.AuthViewModel // ✅ 1. ADD AUTHVIEWMODEL IMPORT
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.strathtankalumni.R
+import com.example.strathtankalumni.data.MessagesViewModel
+import com.example.strathtankalumni.viewmodel.AuthViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,21 +37,25 @@ fun DirectMessageScreen(
     otherUserId: String,
     userName: String,
     viewModel: MessagesViewModel = viewModel(),
-    authViewModel: AuthViewModel = viewModel() // ✅ 2. INJECT AUTHVIEWMODEL
+    authViewModel: AuthViewModel = viewModel()
 ) {
-    // ✅ 3. GET THE DYNAMIC CURRENT USER ID
+    // This is correct
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
 
-    // ✅ 4. UPDATE EFFECT TO HANDLE A NULL USER ID
-    // Load messages when currentUserId or otherUserId changes
+    // --- THIS IS THE MODIFIED BLOCK ---
     LaunchedEffect(key1 = currentUserId, key2 = otherUserId) {
         if (currentUserId != null) {
+            // This line was already here
             viewModel.loadDirectMessages(currentUserId, otherUserId)
+
+            // 🚀 THIS IS THE NEW LINE YOU NEEDED
+            // It resets the unread count to 0 when you open the chat
+            viewModel.markAsRead(currentUserId, otherUserId)
         }
     }
+    // --- END OF MODIFICATION ---
 
-    // Clear messages when leaving the screen
     DisposableEffect(Unit) {
         onDispose {
             viewModel.clearDirectMessages()
@@ -50,20 +63,33 @@ fun DirectMessageScreen(
     }
 
     val messages by viewModel.directMessages.collectAsState()
+    val conversations by viewModel.conversations.collectAsState()
+
+    // Find the specific user object for this chat
+    val otherUser = remember(conversations, otherUserId) {
+        conversations.find { it.user.userId == otherUserId }?.user
+    }
+
+    // 1. Get OTHER user's photo URL
+    val otherUserPhotoUrl = otherUser?.profilePhotoUrl
+
+    // 2. Get CURRENT user's photo URL
+    val currentUserPhotoUrl = currentUser?.profilePhotoUrl
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        TopAppBar(
+        // This is correct
+        CenterAlignedTopAppBar(
             title = { Text(userName, fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface
             )
@@ -78,16 +104,20 @@ fun DirectMessageScreen(
             item { Spacer(Modifier.height(8.dp)) }
 
             items(messages.reversed()) { message ->
+                // 3. Pass BOTH URLs to MessageBubble
                 MessageBubble(
                     text = message.text,
-                    isFromUser = message.senderId == currentUserId // This check is safe
+                    isFromUser = message.senderId == currentUserId,
+                    otherUserPhotoUrl = otherUserPhotoUrl,
+                    currentUserPhotoUrl = currentUserPhotoUrl
                 )
             }
         }
 
+        // 4. Pass CURRENT user's URL to MessageInput
         MessageInput(
+            currentUserPhotoUrl = currentUserPhotoUrl,
             onMessageSend = { text ->
-                // ✅ 5. ENSURE USER IS NOT NULL BEFORE SENDING
                 if (currentUserId != null) {
                     viewModel.sendMessage(
                         text = text,
@@ -100,8 +130,14 @@ fun DirectMessageScreen(
     }
 }
 
+
 @Composable
-private fun MessageBubble(text: String, isFromUser: Boolean) {
+private fun MessageBubble(
+    text: String,
+    isFromUser: Boolean,
+    otherUserPhotoUrl: String?,
+    currentUserPhotoUrl: String?
+) {
     val alignment = if (isFromUser) Alignment.CenterEnd else Alignment.CenterStart
     val color =
         if (isFromUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
@@ -113,23 +149,60 @@ private fun MessageBubble(text: String, isFromUser: Boolean) {
     } else {
         RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
     }
+
+    // Helper composable to avoid repeating the AsyncImage code
+    @Composable
+    fun ProfileImage(photoUrl: String?) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                .crossfade(true)
+                .build(),
+            contentDescription = "Profile photo",
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFF1F3F4)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.noprofile)
+        )
+    }
+
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = alignment
     ) {
-        Text(
-            text = text,
-            color = textColor,
-            modifier = Modifier
-                .background(color, shape)
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        )
+        Row(
+            verticalAlignment = Alignment.Bottom
+        ) {
+            // 1. If it's the OTHER user, show pic on the LEFT
+            if (!isFromUser) {
+                ProfileImage(photoUrl = otherUserPhotoUrl)
+                Spacer(Modifier.width(8.dp))
+            }
+
+            // 2. The Text bubble is always in the middle
+            Text(
+                text = text,
+                color = textColor,
+                modifier = Modifier
+                    .background(color, shape)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            )
+
+            // 3. If it's the CURRENT user, show pic on the RIGHT
+            if (isFromUser) {
+                Spacer(Modifier.width(8.dp))
+                ProfileImage(photoUrl = currentUserPhotoUrl)
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageInput(
+    currentUserPhotoUrl: String?,
     onMessageSend: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
@@ -139,12 +212,21 @@ private fun MessageInput(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
+        // Replaced the hardcoded Icon with the AsyncImage
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                .crossfade(true)
+                .build(),
             contentDescription = "Your profile picture",
-            modifier = Modifier.size(40.dp),
-            tint = Color.LightGray
+            modifier = Modifier
+                .size(40.dp) // Kept original size
+                .clip(CircleShape)
+                .background(Color(0xFFF1F3F4)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.noprofile)
         )
+
         Spacer(Modifier.width(8.dp))
         OutlinedTextField(
             value = text,

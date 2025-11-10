@@ -21,10 +21,6 @@ import com.example.strathtankalumni.data.Connection
 
 // --- DATA MODELS ---
 
-/**
- * Data class mapping to the 'users' collection in Firestore.
- */
-
 data class Message(
     val id: String = "",
     val text: String = "",
@@ -44,7 +40,10 @@ data class Conversation(
     val lastMessage: String = "",
     val lastSenderId: String = "",
     @ServerTimestamp
-    val lastMessageTimestamp: Date? = null
+    val lastMessageTimestamp: Date? = null,
+
+    // This map stores the unread count
+    val unreadCount: Map<String, Long> = emptyMap()
 )
 
 /**
@@ -53,7 +52,10 @@ data class Conversation(
  */
 data class ConversationWithUser(
     val conversation: Conversation,
-    val user: User
+    val user: User,
+
+    // This holds the count for the current user
+    val unreadCount: Int = 0
 )
 
 
@@ -77,9 +79,8 @@ class MessagesViewModel : ViewModel() {
     }
 
     /**
-     * ✅ 2. REPLACED with the new function that uses Connections
-     * This function now loads conversations
-     * based on the list of accepted connections from AuthViewModel.
+     * THIS IS THE CRITICAL FUNCTION
+     * It loads conversations AND their unread counts.
      */
     fun loadConversations(currentUserId: String, connections: List<Connection>) {
         viewModelScope.launch {
@@ -94,27 +95,27 @@ class MessagesViewModel : ViewModel() {
                         val user = userDoc.toObject(User::class.java)
 
                         if (user != null) {
-                            // Fetch the last message for this chat
+                            // 1. FETCH THE CHAT DOCUMENT ITSELF
                             val chatId = connection.id // The connection ID is the chat ID
-                            val lastMessageDoc = db.collection("chats").document(chatId)
-                                .collection("messages")
-                                .orderBy("timestamp", Query.Direction.DESCENDING)
-                                .limit(1)
-                                .get()
-                                .await()
+                            val chatDoc = db.collection("chats").document(chatId).get().await()
+                            val conversation = chatDoc.toObject(Conversation::class.java)
 
-                            val lastMessage = lastMessageDoc.documents.firstOrNull()
-                                ?.toObject(Message::class.java)
+                            // 2. GET THE CURRENT USER'S UNREAD COUNT
+                            val unreadCountForMe = conversation?.unreadCount?.get(currentUserId) ?: 0L
 
-                            // Create a Conversation summary object
-                            val convo = Conversation(
+                            // 3. CREATE THE CONVERSATION OBJECT
+                            val convo = conversation ?: Conversation(
                                 id = chatId,
                                 participants = connection.participantIds,
-                                lastMessage = lastMessage?.text ?: "No messages yet.",
-                                lastSenderId = lastMessage?.senderId ?: "",
-                                lastMessageTimestamp = lastMessage?.timestamp
+                                lastMessage = "No messages yet."
                             )
-                            return@mapNotNull ConversationWithUser(convo, user)
+
+                            // 4. RETURN THE NEW HELPER CLASS
+                            return@mapNotNull ConversationWithUser(
+                                conversation = convo,
+                                user = user,
+                                unreadCount = unreadCountForMe.toInt() // Pass the count to the UI
+                            )
                         }
                     }
                     null // Return null if any step fails, mapNotNull will filter it out
@@ -161,7 +162,27 @@ class MessagesViewModel : ViewModel() {
     }
 
     /**
+     * Resets the unread count for the current user for a specific chat.
+     */
+    fun markAsRead(currentUserId: String, otherUserId: String) {
+        if (currentUserId.isBlank()) return
+
+        val chatId = getChatId(currentUserId, otherUserId)
+        val chatDocRef = db.collection("chats").document(chatId)
+
+        // Use dot notation to update a specific field in the map
+        val unreadResetKey = "unreadCount.$currentUserId"
+
+        // Set the count to 0.
+        chatDocRef.update(unreadResetKey, 0)
+            .addOnFailureListener {
+                Log.e("MessagesViewModel", "Failed to mark as read", it)
+            }
+    }
+
+    /**
      * Sends a message and updates the conversation summary in one transaction.
+     * 🚀 THIS FUNCTION IS NOW CORRECTED
      */
     fun sendMessage(text: String, senderId: String, receiverId: String) {
         viewModelScope.launch {
@@ -184,14 +205,25 @@ class MessagesViewModel : ViewModel() {
 
             // 2. Update the main conversation document
             val chatDocRef = db.collection("chats").document(chatId)
-            val conversationUpdate = mapOf(
+
+            // 🚀 --- START OF FIX ---
+
+            // This map contains ONLY the fields for set/merge
+            val conversationSummaryUpdate = mapOf(
                 "participants" to listOf(senderId, receiverId),
                 "lastMessage" to text,
                 "lastSenderId" to senderId,
                 "lastMessageTimestamp" to FieldValue.serverTimestamp()
             )
-            // Use SetOptions.merge() to create the doc if it doesn't exist
-            batch.set(chatDocRef, conversationUpdate, SetOptions.merge())
+            // Use SetOptions.merge() to create/update the summary
+            batch.set(chatDocRef, conversationSummaryUpdate, SetOptions.merge())
+
+            // 🚀 3. Use batch.UPDATE for the unread count
+            // This is the correct way to increment a field inside a map
+            val unreadIncrementKey = "unreadCount.$receiverId"
+            batch.update(chatDocRef, unreadIncrementKey, FieldValue.increment(1))
+
+            // 🚀 --- END OF FIX ---
 
             try {
                 batch.commit().await()
