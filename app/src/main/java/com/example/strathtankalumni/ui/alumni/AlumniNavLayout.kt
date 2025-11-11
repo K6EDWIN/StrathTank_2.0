@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -34,90 +33,71 @@ fun AlumniNavLayout(
     mainNavController: NavHostController,
     navController: NavHostController,
     currentRoute: String?,
-    // 🚀 1. MODIFIED: Added mainNavController to the content lambda
-    content: @Composable (NavHostController, NavHostController, PaddingValues) -> Unit
+    content: @Composable (NavHostController, PaddingValues) -> Unit
 ) {
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
         Screen.AlumniProjects.route -> "Projects"
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
-        Screen.AlumniList.route -> ""
         else -> ""
     }
 
     Scaffold(
         topBar = {
-            if (AlumniNavItems.any { it.route == currentRoute }) {
-                CenterAlignedTopAppBar(
-                    title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.White
-                    ),
-                    actions = {
-                        if (currentRoute == Screen.AlumniHome.route) {
-
-                            IconButton(onClick = {
-                                navController.navigate(Screen.AlumniList.route)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.People,
-                                    contentDescription = "Find Alumni",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            // ✅ MODIFIED: Use 'navController' here
-                            IconButton(onClick = {
-                                navController.navigate(Screen.AlumniNotifications.route)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
+            CenterAlignedTopAppBar(
+                title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                ),
+                actions = {
+                    if (currentRoute == Screen.AlumniHome.route) {
+                        IconButton(onClick = {
+                            mainNavController.navigate(Screen.AlumniNotifications.route)
+                        }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Notifications",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                )
-            }
+                }
+            )
         },
         bottomBar = {
-            if (AlumniNavItems.any { it.route == currentRoute }) {
-                NavigationBar(containerColor = Color.White) {
-                    AlumniNavItems.forEach { item ->
-                        val selected = currentRoute == item.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(Screen.AlumniHome.route) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+            NavigationBar(containerColor = Color.White) {
+                AlumniNavItems.forEach { item ->
+                    val selected = currentRoute == item.route
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            if (currentRoute != item.route) {
+                                navController.navigate(item.route) {
+                                    popUpTo(Screen.AlumniHome.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = item.label
-                                )
-                            },
-                            label = { Text(item.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label
                             )
+                        },
+                        label = { Text(item.label) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
+                    )
                 }
             }
         }
     ) { paddingValues ->
-        // 🚀 2. MODIFIED: Passed mainNavController to the content lambda
-        content(mainNavController, navController, paddingValues)
+        content(navController, paddingValues)
     }
 }

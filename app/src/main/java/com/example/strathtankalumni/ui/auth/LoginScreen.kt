@@ -44,7 +44,7 @@ fun LoginScreen(
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
-            else -> Unit
+            AuthState.Loading, AuthState.Idle -> Unit // Explicitly handle Loading and Idle
         }
     }
 

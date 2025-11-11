@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
+import com.example.strathtankalumni.viewmodel.AuthViewModel // NEW IMPORT
 
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
@@ -25,7 +26,10 @@ private sealed class ResetStage {
 }
 
 @Composable
-fun ForgotPasswordScreen(navController: NavHostController) {
+fun ForgotPasswordScreen(
+    navController: NavHostController,
+    authViewModel: AuthViewModel // FIX: Added AuthViewModel parameter
+) {
     val auth = FirebaseAuth.getInstance()
     val context = LocalContext.current
 
@@ -115,7 +119,6 @@ fun ForgotPasswordScreen(navController: NavHostController) {
                     style = MaterialTheme.typography.bodyLarge,
                     color = DarkText,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    // FIX: Using chained padding for better compatibility
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 48.dp)
@@ -145,5 +148,3 @@ fun ForgotPasswordScreen(navController: NavHostController) {
         }
     }
 }
-
-annotation class ForgotPasswordScreen
