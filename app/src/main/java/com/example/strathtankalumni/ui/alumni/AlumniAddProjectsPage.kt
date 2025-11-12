@@ -4,6 +4,10 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+// ✅ ADDED IMPORTS
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+// -----------------
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -240,7 +244,12 @@ fun AlumniAddProjectsPage(
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable { coverImagePickerLauncher.launch("image/*") }, // RENAMED LAUNCHER
+                    // ✅ APPLIED FIX 1
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { coverImagePickerLauncher.launch("image/*") }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
@@ -303,7 +312,12 @@ fun AlumniAddProjectsPage(
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                        .clickable { mediaImagePickerLauncher.launch("image/*") },
+                        // ✅ APPLIED FIX 2
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = LocalIndication.current,
+                            onClick = { mediaImagePickerLauncher.launch("image/*") }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Image", tint = Color.Gray)
@@ -320,7 +334,12 @@ fun AlumniAddProjectsPage(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable { pdfFilePickerLauncher.launch("application/pdf") }
+                    // ✅ APPLIED FIX 3
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { pdfFilePickerLauncher.launch("application/pdf") }
+                    )
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween

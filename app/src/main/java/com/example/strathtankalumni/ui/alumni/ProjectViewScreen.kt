@@ -1,5 +1,9 @@
 package com.example.strathtankalumni.ui.alumni
 
+// ✅ ADDED IMPORTS
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+// -----------------
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -203,7 +207,12 @@ fun ProjectViewScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { openUrl(project.pdfUrl) }, // Open PDF in browser/viewer
+                    // ✅ APPLIED FIX
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { openUrl(project.pdfUrl) } // Open PDF in browser/viewer
+                    ),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
