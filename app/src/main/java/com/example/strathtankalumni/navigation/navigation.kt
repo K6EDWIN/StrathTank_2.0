@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,6 +19,7 @@ import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
 import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
+import com.example.strathtankalumni.viewmodel.AuthViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -35,20 +37,21 @@ sealed class Screen(val route: String) {
     object AlumniMessages : Screen("alumni_messages_screen")
     object AlumniProfile : Screen("alumni_profile_screen")
     object AlumniNotifications : Screen("alumni_notifications_screen")
+    object AlumniList : Screen("alumni_list_screen")
 
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 
-    // Project View Screen
-    object ProjectView : Screen("project_view/{title}/{description}") {
-        fun createRoute(title: String, description: String): String {
-            val encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8.toString())
-            val encodedDescription = URLEncoder.encode(description, StandardCharsets.UTF_8.toString())
-            return "project_view/$encodedTitle/$encodedDescription"
-        }
-    }
+    // --- NEW Project Routes from Ian's Branch ---
+    object AlumniAddProjects : Screen("alumni_add_projects_screen")
 
-    // Direct Message route
+    object AlumniProjectDetail : Screen("alumni_project_detail/{projectId}") {
+        fun createRoute(projectId: String) = "alumni_project_detail/$projectId"
+    }
+    // --- END NEW Project Routes ---
+
+
+    // --- YOUR Direct Message route ---
     object DirectMessage : Screen("direct_message/{userName}/{otherUserId}") {
         fun createRoute(userName: String, otherUserId: String): String {
             val encodedUserName = URLEncoder.encode(userName, StandardCharsets.UTF_8.toString())
@@ -56,27 +59,28 @@ sealed class Screen(val route: String) {
         }
     }
 
-    // Other Profile route
+    // --- YOUR Other Profile route ---
     object OtherProfile : Screen("other_profile/{userId}") {
         fun createRoute(userId: String): String {
             return "other_profile/$userId"
         }
     }
-
-    object AlumniList : Screen("alumni_list_screen")
 }
 
 // ------------------ MAIN APP NAVIGATION ------------------ //
 @Composable
 fun AppNavHost(navController: NavHostController) {
+    // AuthViewModel is passed to Login/Register from here
+    val authViewModel: AuthViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Welcome.route
     ) {
         // Auth
         composable(Screen.Welcome.route) { WelcomeScreen(navController) }
-        composable(Screen.Login.route) { LoginScreen(navController) }
-        composable(Screen.Register.route) { RegistrationScreen(navController) }
+        composable(Screen.Login.route) { LoginScreen(navController, authViewModel) } // Pass VM
+        composable(Screen.Register.route) { RegistrationScreen(navController, authViewModel) } // Pass VM
         composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController) }
 
         // Alumni main graph
@@ -89,7 +93,7 @@ fun AppNavHost(navController: NavHostController) {
             AdminDashboardScreen(navController = navController)
         }
 
-        // Direct Message Screen
+        // Direct Message Screen (at the main nav level)
         composable(
             route = Screen.DirectMessage.route,
             arguments = listOf(
@@ -107,6 +111,7 @@ fun AppNavHost(navController: NavHostController) {
                     navController = navController,
                     userName = userName,
                     otherUserId = otherUserId
+                    // authViewModel is provided by default in the screen
                 )
             } else {
                 navController.popBackStack()
@@ -122,6 +127,9 @@ fun AlumniGraph(mainNavController: NavHostController) {
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
+    // AuthViewModel is instantiated here for all screens in this graph
+    val authViewModel: AuthViewModel = viewModel()
+
     AlumniNavLayout(
         mainNavController = mainNavController,
         navController = alumniNavController,
@@ -130,8 +138,7 @@ fun AlumniGraph(mainNavController: NavHostController) {
         NavHost(
             navController = alumniNavController,
             startDestination = Screen.AlumniHome.route,
-            // 🚀 THIS IS THE FIX: Removed .padding(paddingValues)
-            modifier = Modifier
+            modifier = Modifier.padding(paddingValues) // Apply padding here
         ) {
             composable(Screen.AlumniHome.route) {
                 AlumniHomeScreen(alumniNavController)
@@ -140,14 +147,16 @@ fun AlumniGraph(mainNavController: NavHostController) {
             composable(Screen.AlumniProjects.route) {
                 AlumniProjectsScreen(
                     navController = alumniNavController,
-                    padding = paddingValues
+                    padding = paddingValues,
+                    authViewModel = authViewModel // Pass VM
                 )
             }
 
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(
-                    navController = mainNavController,
-                    paddingValues = paddingValues
+                    navController = mainNavController, // Use main for DM
+                    paddingValues = paddingValues,
+                    authViewModel = authViewModel // Pass VM
                 )
             }
 
@@ -155,16 +164,23 @@ fun AlumniGraph(mainNavController: NavHostController) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
                     alumniNavController = alumniNavController,
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
+                    authViewModel = authViewModel // Pass VM
                 )
             }
 
             composable(Screen.AlumniNotifications.route) {
-                AlumniNotificationsScreen(navController = alumniNavController)
+                AlumniNotificationsScreen(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel // Pass VM
+                )
             }
 
             composable(Screen.AlumniList.route) {
-                AlumniListScreen(navController = alumniNavController)
+                AlumniListScreen(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel // Pass VM
+                )
             }
 
             composable(
@@ -179,36 +195,32 @@ fun AlumniGraph(mainNavController: NavHostController) {
                     OtherUserProfileScreen(
                         userId = userId,
                         navController = alumniNavController,
-                        mainNavController = mainNavController
+                        mainNavController = mainNavController, // Pass main for DM
+                        authViewModel = authViewModel // Pass VM
                     )
                 } else {
                     alumniNavController.popBackStack()
                 }
             }
 
+            // --- NEW: Project Detail Screen ---
             composable(
-                route = Screen.ProjectView.route,
-                arguments = listOf(
-                    navArgument("title") { type = NavType.StringType },
-                    navArgument("description") { type = NavType.StringType }
-                )
+                route = Screen.AlumniProjectDetail.route,
+                arguments = listOf(navArgument("projectId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val title = backStackEntry.arguments?.getString("title") ?: ""
-                val description = backStackEntry.arguments?.getString("description") ?: ""
+                val projectId = backStackEntry.arguments?.getString("projectId")
+                AlumniProjectDetailScreen(
+                    navController = alumniNavController,
+                    projectId = projectId,
+                    authViewModel = authViewModel
+                )
+            }
 
-                val decodedTitle = remember(title) {
-                    URLDecoder.decode(title, StandardCharsets.UTF_8.toString())
-                }
-                val decodedDescription = remember(description) {
-                    URLDecoder.decode(description, StandardCharsets.UTF_8.toString())
-                }
-
-                ProjectViewScreen(
-                    title = decodedTitle,
-                    description = decodedDescription,
-                    onBack = {
-                        alumniNavController.popBackStack()
-                    }
+            // --- NEW: Add Project Screen ---
+            composable(Screen.AlumniAddProjects.route) {
+                AlumniAddProjectsPage(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel
                 )
             }
         }
