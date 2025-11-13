@@ -21,6 +21,7 @@ import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.util.UniversityData
+import com.example.strathtankalumni.viewmodel.AuthState
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,9 +31,7 @@ fun RegistrationScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-
-    // Local state to manage loading/progress, replacing AuthState
-    var isLoading by remember { mutableStateOf(false) }
+    val authState by authViewModel.authState.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -53,13 +52,34 @@ fun RegistrationScreen(
     val years = (1980..currentYear).map { it.toString() }.reversed()
     var yearMenuExpanded by remember { mutableStateOf(false) }
 
-    // Removed LaunchedEffect(authState) and AuthState usage
+    // Observe authState for navigation and feedback
+    LaunchedEffect(authState) {
+        when (val state = authState) {
+            is AuthState.Success -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                // Navigate to login after successful registration
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Screen.Welcome.route) { inclusive = true } // Clear back stack to welcome
+                }
+                authViewModel.resetAuthState()
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                authViewModel.resetAuthState()
+            }
+            AuthState.Loading, AuthState.Idle -> Unit
+        }
+    }
 
     val onRegisterClicked: () -> Unit = {
         if (password != confirmPassword) {
             Toast.makeText(context, "Passwords do not match.", Toast.LENGTH_SHORT).show()
         } else {
-            isLoading = true
+            // Check if essential fields are filled
+            if (email.isBlank() || password.isBlank() || firstName.isBlank() || lastName.isBlank() || universityName.isBlank() || graduationYear.isBlank()) {
+                Toast.makeText(context, "Please fill in all fields.", Toast.LENGTH_LONG).show()
+            }
+
             val newUser = User(
                 email = email,
                 firstName = firstName,
@@ -71,18 +91,13 @@ fun RegistrationScreen(
                 role = role
             )
 
-            authViewModel.registerUser(newUser, password) { success, message ->
-                isLoading = false // Stop loading regardless of result
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
-                if (success) {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true } // Clear back stack to welcome
-                    }
-                }
-            }
+            // Call registerUser
+            authViewModel.registerUser(newUser, password)
         }
     }
+
+    // Determine loading state from AuthState
+    val isLoading = authState == AuthState.Loading
 
     LazyColumn(
         modifier = Modifier

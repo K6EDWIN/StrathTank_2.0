@@ -3,11 +3,9 @@ package com.example.strathtankalumni.ui.alumni
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.foundation.Image
-// ✅ ADDED IMPORTS
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-// -----------------
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,14 +15,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember // ✅ 'remember' is needed
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,11 +31,14 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import com.example.strathtankalumni.viewmodel.ProjectsListState
 import com.example.strathtankalumni.viewmodel.ProjectDetailState
+import com.example.strathtankalumni.viewmodel.ProjectsListState
 import java.util.Calendar
 import java.util.Date
 
+// =====================================================================
+// ALUMNI PROJECTS SCREEN (List + Tabs + Search + Navigation)
+// =====================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectsScreen(
@@ -52,39 +46,30 @@ fun AlumniProjectsScreen(
     padding: PaddingValues,
     authViewModel: AuthViewModel
 ) {
-    // State to manage the search query
     var searchQuery by remember { mutableStateOf("") }
-    // State to manage the selected tab (0: All, 1: Latest, 2: My Projects)
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("All", "Latest", "My Projects")
 
-    // Collect the projects state and current user from the ViewModel
     val projectsState by authViewModel.allProjectsState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
 
-    // Fetch projects and current user data when the screen is first composed
+    // Fetch projects when first opened
     LaunchedEffect(Unit) {
         authViewModel.fetchAllProjects()
-        authViewModel.fetchCurrentUser() // Ensure current user data is fetched for "My Projects" filter
+        authViewModel.fetchCurrentUser()
     }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    navController.navigate(Screen.AlumniAddProjects.route)
-                },
+                onClick = { navController.navigate(Screen.AlumniAddProjects.route) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Project"
-                )
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Project")
             }
         }
     ) { innerPadding ->
-
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -104,18 +89,20 @@ fun AlumniProjectsScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            // Segmented Tabs for Filtering
+            // Tabs for filtering
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp) // Adjusted spacing
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 tabTitles.forEachIndexed { index, title ->
                     OutlinedButton(
                         onClick = { selectedTabIndex = index },
                         modifier = Modifier.weight(1f),
                         shape = when (index) {
-                            0 -> RoundedCornerShape(topStart = 50.dp, bottomStart = 50.dp, topEnd = 0.dp, bottomEnd = 0.dp)
-                            tabTitles.lastIndex -> RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 50.dp, bottomEnd = 50.dp)
+                            0 -> RoundedCornerShape(topStart = 50.dp, bottomStart = 50.dp)
+                            tabTitles.lastIndex -> RoundedCornerShape(topEnd = 50.dp, bottomEnd = 50.dp)
                             else -> RoundedCornerShape(0.dp)
                         },
                         colors = if (index == selectedTabIndex) {
@@ -126,7 +113,6 @@ fun AlumniProjectsScreen(
                         } else {
                             ButtonDefaults.outlinedButtonColors()
                         },
-                        // Only add border to unselected buttons for a continuous look
                         border = if (index != selectedTabIndex) ButtonDefaults.outlinedButtonBorder else null,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
                     ) {
@@ -135,57 +121,50 @@ fun AlumniProjectsScreen(
                 }
             }
 
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dynamic content based on ProjectsListState
+            // Handle project state
             when (projectsState) {
-                is ProjectsListState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                is ProjectsListState.Loading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-                is ProjectsListState.Error -> {
-                    Text(
-                        text = "Error: ${(projectsState as ProjectsListState.Error).message}",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+
+                is ProjectsListState.Error -> Text(
+                    text = "Error: ${(projectsState as ProjectsListState.Error).message}",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
+                )
+
                 is ProjectsListState.Success -> {
                     val allProjects = (projectsState as ProjectsListState.Success).projects
                     val currentUserId = currentUser?.userId
 
-                    // Step 1: Apply Tab Filter
                     val tabFilteredProjects = when (selectedTabIndex) {
-                        1 -> allProjects.filter { isProjectToday(it) } // Latest (Today's Projects)
-                        2 -> allProjects.filter { it.userId == currentUserId && currentUserId != null } // My Projects
-                        else -> allProjects // All Projects (Index 0)
+                        1 -> allProjects.filter { isProjectToday(it) } // Latest
+                        2 -> allProjects.filter { it.userId == currentUserId && currentUserId != null } // My projects
+                        else -> allProjects
                     }
 
-                    // Step 2: Apply Search Filter
                     val finalFilteredProjects = tabFilteredProjects.filter {
                         it.title.contains(searchQuery, ignoreCase = true) ||
                                 it.description.contains(searchQuery, ignoreCase = true)
                     }
 
                     if (finalFilteredProjects.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             val message = if (searchQuery.isBlank()) {
                                 when (selectedTabIndex) {
                                     1 -> "No projects were created today."
-                                    2 -> if (currentUserId == null) "Log in to see your projects." else "You haven't posted any projects yet."
-                                    else -> "No projects found in the database."
+                                    2 -> if (currentUserId == null)
+                                        "Log in to see your projects."
+                                    else "You haven't posted any projects yet."
+                                    else -> "No projects found."
                                 }
-                            } else {
-                                "No projects match your search in this category."
-                            }
+                            } else "No projects match your search."
+
                             Text(
                                 text = message,
                                 color = Color(0xFF666666),
@@ -194,14 +173,16 @@ fun AlumniProjectsScreen(
                             )
                         }
                     } else {
-                        // Display the list of projects
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             item {
-                                // Dynamic Heading
-                                Text("${tabTitles[selectedTabIndex]}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(
+                                    "${tabTitles[selectedTabIndex]}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
@@ -209,7 +190,6 @@ fun AlumniProjectsScreen(
                                 ProjectCard(
                                     project = project,
                                     onClick = {
-                                        // Navigate to detail screen on click
                                         navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
                                     }
                                 )
@@ -222,7 +202,9 @@ fun AlumniProjectsScreen(
     }
 }
 
-// Helper function to check if a project's creation date is today
+// =====================================================================
+// HELPER COMPOSABLES
+// =====================================================================
 private fun isProjectToday(project: Project): Boolean {
     val projectDate: Date? = project.createdAt
     if (projectDate == null) return false
@@ -234,14 +216,11 @@ private fun isProjectToday(project: Project): Boolean {
             projectCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)
 }
 
-// Updated ProjectCard composable to use Project data class and be clickable
 @Composable
 fun ProjectCard(project: Project, onClick: () -> Unit) {
-    // Add clickable modifier to the outer Row
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            // ✅ APPLIED FIX
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current,
@@ -250,11 +229,9 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Display project photo (using imageUrl)
         Image(
             painter = rememberAsyncImagePainter(
                 ImageRequest.Builder(LocalContext.current)
-                    // Use project's imageUrl for photo, falling back to a sample image
                     .data(project.imageUrl.ifEmpty { R.drawable.sample_museum })
                     .crossfade(true)
                     .build()
@@ -266,10 +243,7 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
                 .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop
         )
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            // Display project title
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = project.title,
                 fontWeight = FontWeight.Bold,
@@ -277,7 +251,6 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2
             )
-            // Display project description snippet
             Text(
                 text = project.description,
                 fontSize = 14.sp,
@@ -286,13 +259,12 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             )
         }
     }
-    Divider(modifier = Modifier.padding(top = 8.dp)) // Add a divider for better separation
+    Divider(modifier = Modifier.padding(top = 8.dp))
 }
 
 // =====================================================================
-// PROJECT DETAIL SCREEN IMPLEMENTATION (Data Loader & State Manager)
+// PROJECT DETAIL SCREEN (Uses AuthViewModel)
 // =====================================================================
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectDetailScreen(
@@ -302,10 +274,11 @@ fun AlumniProjectDetailScreen(
 ) {
     val projectDetailState by authViewModel.projectDetailState.collectAsState()
 
-    // 1. Fetch data on launch
     LaunchedEffect(projectId) {
-        if (projectId != null) {
+        if (!projectId.isNullOrBlank()) {
             authViewModel.fetchProjectById(projectId)
+            authViewModel.fetchProjectComments(projectId)
+            authViewModel.checkIfProjectIsLiked(projectId)
         }
     }
 
@@ -324,24 +297,21 @@ fun AlumniProjectDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Apply padding from Scaffold
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            // 2. Handle state (Loading, Error, Success)
             when (val state = projectDetailState) {
-                is ProjectDetailState.Loading, ProjectDetailState.Idle -> {
-                    CircularProgressIndicator()
-                }
-                is ProjectDetailState.Error -> {
-                    Text(text = "Error loading project: ${state.message}", color = MaterialTheme.colorScheme.error)
-                }
-                is ProjectDetailState.Success -> {
-                    // Call the dedicated content composable from ProjectViewScreen.kt
-                    ProjectViewScreen(
-                        project = state.project,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
+                is ProjectDetailState.Loading, ProjectDetailState.Idle -> CircularProgressIndicator()
+                is ProjectDetailState.Error -> Text(
+                    text = "Error loading project: ${state.message}",
+                    color = MaterialTheme.colorScheme.error
+                )
+
+                is ProjectDetailState.Success -> ProjectViewScreen(
+                    project = state.project,
+                    onBack = { navController.popBackStack() },
+                    authViewModel = authViewModel
+                )
             }
         }
     }

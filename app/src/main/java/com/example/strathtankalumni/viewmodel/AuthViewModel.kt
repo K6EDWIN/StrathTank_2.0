@@ -11,6 +11,8 @@ import com.example.strathtankalumni.data.User
 // --- MERGED IMPORTS ---
 import com.example.strathtankalumni.data.ExperienceItem // Your ExperienceItem
 import com.example.strathtankalumni.data.Project // Ian's Project model
+import com.example.strathtankalumni.data.ProjectLike // ✅ NEW
+import com.example.strathtankalumni.data.Comment // ✅ NEW
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -82,7 +84,7 @@ class AuthViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<NotificationItemData>>(emptyList())
     val notifications: StateFlow<List<NotificationItemData>> = _notifications
 
-    // --- IAN'S STATEFLOWS ---
+    // --- IAN'S PROJECT STATEFLOWS ---
     private val _projectState = MutableStateFlow<ProjectState>(ProjectState.Idle)
     val projectState: StateFlow<ProjectState> = _projectState
 
@@ -91,6 +93,13 @@ class AuthViewModel : ViewModel() {
 
     private val _projectDetailState = MutableStateFlow<ProjectDetailState>(ProjectDetailState.Idle)
     val projectDetailState: StateFlow<ProjectDetailState> = _projectDetailState
+
+    // ✅ NEW STATEFLOWS FOR PROJECTS (Comments & Likes)
+    private val _projectComments = MutableStateFlow<List<Comment>>(emptyList())
+    val projectComments: StateFlow<List<Comment>> = _projectComments
+
+    private val _isProjectLiked = MutableStateFlow(false)
+    val isProjectLiked: StateFlow<Boolean> = _isProjectLiked
 
 
     init {
@@ -590,6 +599,146 @@ class AuthViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching project by ID: ${e.message}", e)
                 _projectDetailState.value = ProjectDetailState.Error(e.localizedMessage ?: "Failed to fetch project details.")
+            }
+        }
+    }
+
+    // ----------------------------------------------------
+    // ✅ NEW PROJECT INTERACTION FUNCTIONS (Likes & Comments)
+    // ----------------------------------------------------
+
+    fun submitComment(projectId: String, text: String) {
+        val currentUser = _currentUser.value
+        val userId = currentUser?.userId ?: return
+        val userName = currentUser.let { "${it.firstName} ${it.lastName}" }
+        val userPhotoUrl = currentUser.profilePhotoUrl
+        if (text.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val newComment = Comment(
+                    projectId = projectId,
+                    userId = userId,
+                    userName = userName,
+                    userPhotoUrl = userPhotoUrl,
+                    text = text
+                )
+
+                // 1. Add comment to 'comments' collection
+                firestore.collection("comments").add(newComment).await()
+
+                // 2. Increment comment count on the project
+                firestore.collection("projects").document(projectId)
+                    .update("commentCount", FieldValue.increment(1))
+                    .await()
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error submitting comment: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Sets up a live listener for all comments belonging to a specific project.
+     * This function should be called once when entering the Project Detail screen.
+     */
+    fun fetchProjectComments(projectId: String) {
+        viewModelScope.launch {
+            try {
+                // Clear old comments first
+                _projectComments.value = emptyList()
+
+                firestore.collection("comments")
+                    .whereEqualTo("projectId", projectId)
+                    .orderBy("createdAt", Query.Direction.ASCENDING)
+                    .addSnapshotListener { snapshot, e ->
+                        if (e != null) {
+                            Log.w("AuthViewModel", "Comments listen failed.", e)
+                            _projectComments.value = emptyList()
+                            return@addSnapshotListener
+                        }
+
+                        if (snapshot != null) {
+                            val commentsList = snapshot.documents.mapNotNull { document ->
+                                document.toObject(Comment::class.java)?.copy(id = document.id)
+                            }
+                            _projectComments.value = commentsList
+                        } else {
+                            _projectComments.value = emptyList()
+                        }
+                    }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error setting up comments listener", e)
+            }
+        }
+    }
+
+    /**
+     * Checks if the current user has liked the project and updates the StateFlow.
+     * This function should be called when loading project details.
+     */
+    fun checkIfProjectIsLiked(projectId: String) {
+        val userId = auth.currentUser?.uid
+        if (userId == null || projectId.isBlank()) {
+            _isProjectLiked.value = false
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val snapshot = firestore.collection("project_likes")
+                    .whereEqualTo("projectId", projectId)
+                    .whereEqualTo("userId", userId)
+                    .limit(1)
+                    .get()
+                    .await()
+
+                _isProjectLiked.value = !snapshot.isEmpty
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error checking like status: ${e.message}", e)
+                _isProjectLiked.value = false
+            }
+        }
+    }
+
+    /**
+     * Toggles the like status of a project.
+     */
+    fun toggleProjectLike(projectId: String, currentlyLiked: Boolean) {
+        val userId = auth.currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            try {
+                val likesCollection = firestore.collection("project_likes")
+                val projectDocRef = firestore.collection("projects").document(projectId)
+
+                if (currentlyLiked) {
+                    // Unlike: Find and delete the like document
+                    likesCollection
+                        .whereEqualTo("projectId", projectId)
+                        .whereEqualTo("userId", userId)
+                        .get().await().documents.firstOrNull()?.let { doc ->
+                            doc.reference.delete().await()
+                        }
+
+                    // Decrement like count
+                    projectDocRef.update("likes", FieldValue.increment(-1)).await()
+                    _isProjectLiked.value = false
+
+                } else {
+                    // Like: Create a new like document
+                    val newLike = ProjectLike(userId = userId, projectId = projectId)
+                    likesCollection.add(newLike).await()
+
+                    // Increment like count
+                    projectDocRef.update("likes", FieldValue.increment(1)).await()
+                    _isProjectLiked.value = true
+                }
+
+                // Refresh project details to update the like count display
+                fetchProjectById(projectId)
+
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error toggling like: ${e.message}", e)
             }
         }
     }

@@ -81,11 +81,11 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.Welcome.route) { WelcomeScreen(navController) }
         composable(Screen.Login.route) { LoginScreen(navController, authViewModel) } // Pass VM
         composable(Screen.Register.route) { RegistrationScreen(navController, authViewModel) } // Pass VM
-        composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController) }
+        composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController, authViewModel) } // <-- FIXED: Pass authViewModel
 
         // Alumni main graph
         composable(Screen.AlumniHome.route) {
-            AlumniGraph(mainNavController = navController)
+            AlumniGraph(mainNavController = navController, authViewModel = authViewModel) // <-- FIXED: Pass authViewModel
         }
 
         // Admin
@@ -122,13 +122,13 @@ fun AppNavHost(navController: NavHostController) {
 
 // ------------------ ALUMNI NAV GRAPH ------------------ //
 @Composable
-fun AlumniGraph(mainNavController: NavHostController) {
+fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewModel) { // <-- FIXED: Accept authViewModel as parameter
     val alumniNavController = rememberNavController()
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    // AuthViewModel is instantiated here for all screens in this graph
-    val authViewModel: AuthViewModel = viewModel()
+    // AuthViewModel is now passed as a parameter, so we remove the local instantiation:
+    // val authViewModel: AuthViewModel = viewModel()
 
     AlumniNavLayout(
         mainNavController = mainNavController,
@@ -141,7 +141,7 @@ fun AlumniGraph(mainNavController: NavHostController) {
             modifier = Modifier.padding(paddingValues) // Apply padding here
         ) {
             composable(Screen.AlumniHome.route) {
-                AlumniHomeScreen(alumniNavController)
+                AlumniHomeScreen(alumniNavController, authViewModel) // <-- FIXED: Pass authViewModel to AlumniHomeScreen
             }
 
             composable(Screen.AlumniProjects.route) {
