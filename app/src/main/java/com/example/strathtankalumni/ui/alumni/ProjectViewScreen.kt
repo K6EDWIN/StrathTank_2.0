@@ -1,5 +1,9 @@
 package com.example.strathtankalumni.ui.alumni
 
+// ✅ ADDED IMPORTS
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+// -----------------
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -11,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -31,7 +34,6 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import com.example.strathtankalumni.data.Project
 
 // NEW: Import for Intent handling
@@ -43,7 +45,7 @@ import android.net.Uri
 fun ProjectViewScreen(
     project: Project,
     // The onBack parameter is kept but not used here, as the outer screen handles navigation.
-    onBack: () -> Unit // This is no longer strictly needed in this content-only composable, but harmless.
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
     var commentText by remember { mutableStateOf("") }
@@ -205,7 +207,12 @@ fun ProjectViewScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { openUrl(project.pdfUrl) }, // Open PDF in browser/viewer
+                    // ✅ APPLIED FIX
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { openUrl(project.pdfUrl) } // Open PDF in browser/viewer
+                    ),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {

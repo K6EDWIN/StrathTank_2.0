@@ -7,13 +7,12 @@ import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.strathtankalumni.navigation.Screen
 
 data class NavItem(
@@ -34,34 +33,22 @@ private val AlumniNavItems = listOf(
 fun AlumniNavLayout(
     mainNavController: NavHostController,
     navController: NavHostController,
-    content: @Composable (NavHostController, PaddingValues) -> Unit
+    currentRoute: String?,
+    // 🚀 1. MODIFIED: Added mainNavController to the content lambda
+    content: @Composable (NavHostController, NavHostController, PaddingValues) -> Unit
 ) {
-    // 1. Derive currentRoute from the nested NavController
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    // 2. Determine the title based on the current route
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
         Screen.AlumniProjects.route -> "Projects"
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
-        // Provide titles for sub-screens for general reference, though they might be overridden by their own Scaffolds
-        Screen.AlumniAddProjects.route -> "Add New Project"
-        // The project detail route needs special handling due to the argument, checking if it starts with the base route.
-        // It will typically be overridden by the detail screen's own TopAppBar.
-        Screen.AlumniProjectDetail.route.substringBefore("/{projectId}") -> "Project Details"
+        Screen.AlumniList.route -> ""
         else -> ""
     }
 
-    // 3. Determine if the Bottom Bar (and thus the Top Bar) should be shown
-    // It should only show if the current route is one of the main navigation tabs.
-    val shouldShowBottomBar = AlumniNavItems.any { it.route == currentRoute }
-
     Scaffold(
         topBar = {
-            // Only show TopBar for main tab screens
-            if (shouldShowBottomBar) {
+            if (AlumniNavItems.any { it.route == currentRoute }) {
                 CenterAlignedTopAppBar(
                     title = { Text(text = title, color = MaterialTheme.colorScheme.primary) },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -69,9 +56,20 @@ fun AlumniNavLayout(
                     ),
                     actions = {
                         if (currentRoute == Screen.AlumniHome.route) {
+
                             IconButton(onClick = {
-                                // Navigate to the Notifications screen via the main NavHost
-                                mainNavController.navigate(Screen.AlumniNotifications.route)
+                                navController.navigate(Screen.AlumniList.route)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.People,
+                                    contentDescription = "Find Alumni",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            // ✅ MODIFIED: Use 'navController' here
+                            IconButton(onClick = {
+                                navController.navigate(Screen.AlumniNotifications.route)
                             }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Notifications,
@@ -85,8 +83,7 @@ fun AlumniNavLayout(
             }
         },
         bottomBar = {
-            // Only show bottom bar for main tab screens
-            if (shouldShowBottomBar) {
+            if (AlumniNavItems.any { it.route == currentRoute }) {
                 NavigationBar(containerColor = Color.White) {
                     AlumniNavItems.forEach { item ->
                         val selected = currentRoute == item.route
@@ -95,11 +92,8 @@ fun AlumniNavLayout(
                             onClick = {
                                 if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
-                                        // Pop up to the start destination of the graph to avoid stack buildup
                                         popUpTo(Screen.AlumniHome.route) { saveState = true }
-                                        // Avoid re-creating the destination when navigating to the same route
                                         launchSingleTop = true
-                                        // Restore state when re-selecting a previously selected item
                                         restoreState = true
                                     }
                                 }
@@ -123,6 +117,7 @@ fun AlumniNavLayout(
             }
         }
     ) { paddingValues ->
-        content(navController, paddingValues)
+        // 🚀 2. MODIFIED: Passed mainNavController to the content lambda
+        content(mainNavController, navController, paddingValues)
     }
 }

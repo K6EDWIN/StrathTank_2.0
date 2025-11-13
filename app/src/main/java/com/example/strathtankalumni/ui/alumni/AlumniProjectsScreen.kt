@@ -3,7 +3,11 @@ package com.example.strathtankalumni.ui.alumni
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.foundation.Image
+// ✅ ADDED IMPORTS
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+// -----------------
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.remember // ✅ 'remember' is needed
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,17 +41,9 @@ import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectsListState
-import com.example.strathtankalumni.viewmodel.ProjectDetailState // NEW IMPORT
+import com.example.strathtankalumni.viewmodel.ProjectDetailState
 import java.util.Calendar
 import java.util.Date
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.background
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,23 +234,6 @@ private fun isProjectToday(project: Project): Boolean {
             projectCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)
 }
 
-// FilterChip composable (Kept for reference, though unused for the main tabs)
-@Composable
-fun FilterChip(label: String) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFFEFF0F2),
-        modifier = Modifier.padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            fontSize = 14.sp
-        )
-    }
-}
-
-
 // Updated ProjectCard composable to use Project data class and be clickable
 @Composable
 fun ProjectCard(project: Project, onClick: () -> Unit) {
@@ -262,7 +241,12 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick) // Make the card clickable
+            // ✅ APPLIED FIX
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -321,12 +305,6 @@ fun AlumniProjectDetailScreen(
     // 1. Fetch data on launch
     LaunchedEffect(projectId) {
         if (projectId != null) {
-            // Reset state to ensure fresh loading on subsequent calls if needed
-            // NOTE: Assuming _projectDetailState is exposed or AuthViewModel has a reset function
-            // Since we don't have access to AuthViewModel's internals, using the direct value access
-            // might cause issues if it's private. This is a common pattern for ViewModel/StateFlows.
-            // If this fails, AuthViewModel must be updated to expose a reset function or ProjectDetailState.Idle
-            // via a public property. I'll remove the state reset line to avoid accessing private members.
             authViewModel.fetchProjectById(projectId)
         }
     }
@@ -346,8 +324,7 @@ fun AlumniProjectDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp), // Keep horizontal padding here for the loader/error
+                .padding(paddingValues), // Apply padding from Scaffold
             contentAlignment = Alignment.Center
         ) {
             // 2. Handle state (Loading, Error, Success)
@@ -359,8 +336,8 @@ fun AlumniProjectDetailScreen(
                     Text(text = "Error loading project: ${state.message}", color = MaterialTheme.colorScheme.error)
                 }
                 is ProjectDetailState.Success -> {
-                    // Call the dedicated content composable, which should be in ProjectViewScreen.kt
-                    ProjectViewScreen( // RENAMED to the external composable
+                    // Call the dedicated content composable from ProjectViewScreen.kt
+                    ProjectViewScreen(
                         project = state.project,
                         onBack = { navController.popBackStack() }
                     )
@@ -369,8 +346,3 @@ fun AlumniProjectDetailScreen(
         }
     }
 }
-
-// =====================================================================
-// REMOVED: ProjectDetailViewContent, ProjectTag, and CommentItem
-// These composables should be in the dedicated file ProjectViewScreen.kt
-// =====================================================================
