@@ -1,5 +1,6 @@
 package com.example.strathtankalumni.ui.alumni
 
+import android.util.Log
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.foundation.Image
@@ -12,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +32,7 @@ import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.data.Comment
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,13 +48,35 @@ fun ProjectViewScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
 
+    // Fetch comments when project changes
+    LaunchedEffect(project.id) {
+        Log.d("ProjectViewScreen", "Fetching comments for project: ${project.id}")
+        authViewModel.fetchCommentsForProject(project.id)
+    }
+
+    // Log when comments update
+    LaunchedEffect(comments) {
+        Log.d("ProjectViewScreen", "Comments updated: ${comments.size} comments received")
+        comments.forEach { comment ->
+            Log.d("ProjectViewScreen", "Comment: ${comment.text}, User: ${comment.userName}, Date: ${comment.createdAt}")
+        }
+    }
+
+    // Clear comments when leaving screen
+    DisposableEffect(project.id) {
+        onDispose {
+            Log.d("ProjectViewScreen", "Clearing comments for project: ${project.id}")
+            authViewModel.clearComments()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(project.title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -62,7 +88,7 @@ fun ProjectViewScreen(
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
-            // --- Project Image ---
+            // Project Image
             Image(
                 painter = rememberAsyncImagePainter(
                     ImageRequest.Builder(LocalContext.current)
@@ -79,20 +105,28 @@ fun ProjectViewScreen(
             )
 
             Spacer(Modifier.height(16.dp))
-            Text(project.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+
+            // Project Title and Date
+            Text(
+                text = project.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
             Text(
                 text = project.createdAt?.let { "Posted on ${dateFormatter.format(it)}" } ?: "Date N/A",
-                color = Color.Gray, fontSize = 13.sp
+                color = Color.Gray,
+                fontSize = 13.sp
             )
 
             Spacer(Modifier.height(12.dp))
 
-            // --- Like + Comment Row ---
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Like and Comment Counts
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 IconButton(
-                    onClick = {
-                        authViewModel.toggleProjectLike(project.id, isLiked)
-                    }
+                    onClick = { authViewModel.toggleProjectLike(project.id, isLiked) }
                 ) {
                     Icon(
                         imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -104,38 +138,40 @@ fun ProjectViewScreen(
 
                 Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments", tint = Color.Gray)
                 Text(
-                    // Show live comment count or fallback to saved count
-                    text = if (comments.isNotEmpty()) "${comments.size}" else "${project.commentCount}",
+                    text = "${project.commentCount}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
 
-            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-            // --- Description ---
+            // Description Section
             Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Text(project.description, style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(16.dp))
 
-            // --- Resources ---
+            // Resources Section
             if (project.projectUrl.isNotBlank() || project.githubUrl.isNotBlank() || project.pdfUrl.isNotBlank()) {
                 Text("Resources", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
 
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     if (project.projectUrl.isNotBlank())
-                        ProjectLinkChip("Live Project", Icons.Default.OpenInBrowser) { /* open project.projectUrl */ }
+                        ProjectLinkChip("Live Project", Icons.Default.OpenInBrowser) {}
                     if (project.githubUrl.isNotBlank())
-                        ProjectLinkChip("GitHub Repo", Icons.Default.OpenInBrowser) { /* open project.githubUrl */ }
+                        ProjectLinkChip("GitHub Repo", Icons.Default.OpenInBrowser) {}
                     if (project.pdfUrl.isNotBlank())
-                        ProjectLinkChip("Documentation (PDF)", Icons.Default.PictureAsPdf) { /* open project.pdfUrl */ }
+                        ProjectLinkChip("Documentation (PDF)", Icons.Default.PictureAsPdf) {}
                 }
                 Spacer(Modifier.height(16.dp))
             }
 
-            // --- Tech Stack ---
+            // Tech Stack Section
             val techTags = project.programmingLanguages + project.databaseUsed + project.techStack
             if (techTags.isNotEmpty()) {
                 Text("Tech Stack", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -146,7 +182,7 @@ fun ProjectViewScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-            // --- Comments ---
+            // Comments Section
             CommentSection(
                 projectId = project.id,
                 comments = comments,
@@ -161,17 +197,30 @@ fun ProjectViewScreen(
 
 @Composable
 fun ProjectLinkChip(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    AssistChip(onClick = onClick, label = { Text(text) }, leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) })
+    AssistChip(
+        onClick = onClick,
+        label = { Text(text) },
+        leadingIcon = {
+            Icon(icon, null, Modifier.size(18.dp))
+        }
+    )
 }
 
 @Composable
 fun ProjectTag(tag: String) {
-    Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-        Text(tag, Modifier.padding(horizontal = 10.dp, vertical = 5.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondaryContainer)
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Text(
+            tag,
+            Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
     }
 }
 
-// --- COMMENTS SECTION ---
 @Composable
 fun CommentSection(
     projectId: String,
@@ -179,21 +228,87 @@ fun CommentSection(
     authViewModel: AuthViewModel,
     currentUserPhotoUrl: String?
 ) {
-    Column(Modifier.fillMaxWidth()) {
-        // Removed (0)
-        Text("Comments", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(12.dp))
-        CommentInputArea(projectId, authViewModel, currentUserPhotoUrl)
-        Divider(modifier = Modifier.padding(vertical = 16.dp))
+    // Add logging for debugging
+    LaunchedEffect(comments) {
+        Log.d("CommentSection", "Rendering ${comments.size} comments for project: $projectId")
+    }
 
-        if (comments.isEmpty()) {
-            Text("Be the first to comment!", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray)
-        } else {
-            // Comments list directly below heading
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                comments.forEach { CommentItem(it) }
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Comments",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            // Show comment count badge
+            if (comments.isNotEmpty()) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "${comments.size}",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        if (comments.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ChatBubbleOutline,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        "No comments yet.",
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        "Be the first to comment!",
+                        textAlign = TextAlign.Center,
+                        color = Color.LightGray,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Sort comments by date, handling null dates safely
+                comments
+                    .sortedByDescending { it.createdAt ?: Date(0) }
+                    .forEach { comment ->
+                        CommentItem(comment)
+                    }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Comment Input Area
+        CommentInputArea(projectId, authViewModel, currentUserPhotoUrl)
     }
 }
 
@@ -207,15 +322,23 @@ fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUse
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // User profile photo
         Image(
             painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(LocalContext.current).data(currentUserPhotoUrl).crossfade(true).build()
+                ImageRequest.Builder(LocalContext.current)
+                    .data(currentUserPhotoUrl)
+                    .crossfade(true)
+                    .build()
             ),
             contentDescription = "User Photo",
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray),
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color.LightGray),
             contentScale = ContentScale.Crop
         )
 
+        // Comment text field
         OutlinedTextField(
             value = commentText,
             onValueChange = { commentText = it },
@@ -227,13 +350,22 @@ fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUse
                 IconButton(
                     onClick = {
                         if (isSendEnabled) {
-                            authViewModel.submitComment(projectId, commentText)
+                            Log.d("CommentInputArea", "Posting comment: $commentText for project: $projectId")
+                            authViewModel.postComment(projectId, commentText)
                             commentText = ""
                         }
                     },
                     enabled = isSendEnabled
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send",
+                        tint = if (isSendEnabled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.Gray
+                        }
+                    )
                 }
             }
         )
@@ -245,31 +377,51 @@ fun CommentItem(comment: Comment) {
     val timeFormatter = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top
     ) {
+        // User profile photo
         Image(
             painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(LocalContext.current).data(comment.userPhotoUrl).crossfade(true).build()
+                ImageRequest.Builder(LocalContext.current)
+                    .data(comment.userPhotoUrl)
+                    .crossfade(true)
+                    .build()
             ),
             contentDescription = "User Photo",
-            modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.LightGray),
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(Color.LightGray),
             contentScale = ContentScale.Crop
         )
 
-        Column {
-            // Only show first name
-            val firstName = comment.userName.split(" ").firstOrNull() ?: comment.userName
+        // Comment content
+        Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(firstName, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(
+                    text = comment.userName,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
                 Spacer(Modifier.width(4.dp))
-                comment.createdAt?.let {
-                    Text("• ${timeFormatter.format(it)}", color = Color.Gray, fontSize = 12.sp)
+                comment.createdAt?.let { date ->
+                    Text(
+                        text = "• ${timeFormatter.format(date)}",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
                 }
             }
-            Text(comment.text, fontSize = 14.sp, color = Color.DarkGray)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = comment.text,
+                fontSize = 14.sp,
+                color = Color.DarkGray
+            )
         }
     }
-    Divider(modifier = Modifier.padding(top = 8.dp))
 }

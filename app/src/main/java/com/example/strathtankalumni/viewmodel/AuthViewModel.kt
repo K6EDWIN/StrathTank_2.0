@@ -1,4 +1,5 @@
 package com.example.strathtankalumni.viewmodel
+
 import android.content.ContentResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,11 +9,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.strathtankalumni.data.User
-// --- MERGED IMPORTS ---
-import com.example.strathtankalumni.data.ExperienceItem // Your ExperienceItem
-import com.example.strathtankalumni.data.Project // Ian's Project model
-import com.example.strathtankalumni.data.ProjectLike // ✅ NEW
-import com.example.strathtankalumni.data.Comment // ✅ NEW
+import com.example.strathtankalumni.data.ExperienceItem
+import com.example.strathtankalumni.data.Project
+import com.example.strathtankalumni.data.ProjectLike
+import com.example.strathtankalumni.data.Comment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import java.util.UUID
 
-// --- YOUR AUTH STATE ---
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
@@ -39,7 +38,6 @@ sealed class AuthState {
     data class Error(val message: String) : AuthState()
 }
 
-// --- IAN'S PROJECT STATES ---
 sealed class ProjectState {
     object Idle : ProjectState()
     object Loading : ProjectState()
@@ -59,8 +57,6 @@ sealed class ProjectDetailState {
     data class Success(val project: Project) : ProjectDetailState()
     data class Error(val message: String) : ProjectDetailState()
 }
-// --- END STATES ---
-
 
 class AuthViewModel : ViewModel() {
 
@@ -71,7 +67,6 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
-    // --- YOUR STATEFLOWS ---
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser
 
@@ -84,7 +79,6 @@ class AuthViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<NotificationItemData>>(emptyList())
     val notifications: StateFlow<List<NotificationItemData>> = _notifications
 
-    // --- IAN'S PROJECT STATEFLOWS ---
     private val _projectState = MutableStateFlow<ProjectState>(ProjectState.Idle)
     val projectState: StateFlow<ProjectState> = _projectState
 
@@ -94,7 +88,6 @@ class AuthViewModel : ViewModel() {
     private val _projectDetailState = MutableStateFlow<ProjectDetailState>(ProjectDetailState.Idle)
     val projectDetailState: StateFlow<ProjectDetailState> = _projectDetailState
 
-    // ✅ NEW STATEFLOWS FOR PROJECTS (Comments & Likes)
     private val _projectComments = MutableStateFlow<List<Comment>>(emptyList())
     val projectComments: StateFlow<List<Comment>> = _projectComments
 
@@ -104,14 +97,11 @@ class AuthViewModel : ViewModel() {
 
     init {
         loadCurrentUser()
-        // ✅ ADDED: Start all listeners
         loadConnections()
         fetchAllAlumni()
         observeNotifications()
-        // Note: fetchAllProjects() is called from the ProjectsScreen LaunchEffect
     }
 
-    // --- STATE RESET HELPERS ---
     fun resetAuthState() {
         _authState.value = AuthState.Idle
     }
@@ -120,8 +110,6 @@ class AuthViewModel : ViewModel() {
         _projectState.value = ProjectState.Idle
     }
 
-    // --- YOUR AUTH/USER FUNCTIONS ---
-    // (registerUser, signIn, signOut)
     fun registerUser(user: User, password: String) {
         if (user.email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty.")
@@ -135,13 +123,14 @@ class AuthViewModel : ViewModel() {
                 val firebaseUser = authResult.user
 
                 if (firebaseUser != null) {
+
                     firebaseUser.sendEmailVerification().await()
 
                     val newUser = user.copy(userId = firebaseUser.uid)
                     firestore.collection("users").document(firebaseUser.uid).set(newUser).await()
 
                     auth.signOut()
-                    _authState.value = AuthState.Success("Registration successful! Please verify your email.")
+                    _authState.value = AuthState.Success("Registration successful! Welcome to the app.")
                 } else {
                     _authState.value = AuthState.Error("User creation failed.")
                 }
@@ -164,19 +153,21 @@ class AuthViewModel : ViewModel() {
                 val firebaseUser = authResult.user
 
                 if (firebaseUser != null) {
-                    if (firebaseUser.isEmailVerified) {
-                        val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
-                        val user = doc.toObject(User::class.java)
-                        _currentUser.value = user
 
-                        when (user?.role) {
-                            "alumni" -> _authState.value = AuthState.Success("Login successful!", "alumni")
-                            "admin" -> _authState.value = AuthState.Success("Admin login successful!", "admin")
-                            else -> _authState.value = AuthState.Error("Role not recognized.")
-                        }
+
+                    if (firebaseUser.isEmailVerified) {
+                    val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
+                    val user = doc.toObject(User::class.java)
+                    _currentUser.value = user
+
+                    when (user?.role) {
+                        "alumni" -> _authState.value = AuthState.Success("Login successful!", "alumni")
+                        "admin" -> _authState.value = AuthState.Success("Admin login successful!", "admin")
+                        else -> _authState.value = AuthState.Error("Role not recognized.")
+                    }
                     } else {
-                        auth.signOut()
-                        _authState.value = AuthState.Error("Please verify your email before logging in.")
+                     auth.signOut()
+                     _authState.value = AuthState.Error("Please verify your email before logging in.")
                     }
                 }
             } catch (e: Exception) {
@@ -237,8 +228,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) VERSION OF updateUserProfile ---
-    // This is the correct one that uses List<ExperienceItem>
     fun updateUserProfile(
         about: String,
         experience: List<ExperienceItem>,
@@ -253,13 +242,13 @@ class AuthViewModel : ViewModel() {
 
                 val updates = mapOf(
                     "about" to about,
-                    "experience" to experience, // This correctly passes the list
+                    "experience" to experience,
                     "skills" to skills,
                     "linkedinUrl" to linkedinUrl
                 )
 
                 docRef.set(updates, SetOptions.merge()).await()
-                fetchCurrentUser() // Refresh cached user data
+                fetchCurrentUser()
                 onResult(true)
 
             } catch (e: Exception) {
@@ -269,7 +258,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) uploadProfilePhoto FUNCTION ---
     fun uploadProfilePhoto(uri: Uri, contentResolver: ContentResolver, onResult: (Boolean) -> Unit) {
         val user = auth.currentUser
         if (user == null) {
@@ -289,36 +277,32 @@ class AuthViewModel : ViewModel() {
 
                 Log.d("AuthViewModel", "Starting upload to: ${storageRef.path} (uri=${uri})")
 
-                // Try putFile first
                 try {
                     storageRef.putFile(uri).await()
                     Log.d("AuthViewModel", "putFile succeeded for ${storageRef.path}")
                 } catch (putFileEx: Exception) {
                     Log.w("AuthViewModel", "putFile failed, trying putStream fallback: ${putFileEx.message}", putFileEx)
 
-                    // Fallback: open InputStream and use putStream
                     val stream = withContext(Dispatchers.IO) {
                         contentResolver.openInputStream(uri)
                     }
                     if (stream == null) {
                         Log.e("AuthViewModel", "Fallback failed: cannot open input stream for uri: $uri")
-                        throw putFileEx // propagate original failure
+                        throw putFileEx
                     } else {
                         stream.use { storageRef.putStream(it).await() }
                         Log.d("AuthViewModel", "putStream fallback succeeded for ${storageRef.path}")
                     }
                 }
 
-                // Get download URL
                 val downloadUrl = storageRef.downloadUrl.await().toString()
                 Log.d("AuthViewModel", "Profile photo uploaded, downloadUrl=$downloadUrl")
 
-                // Update Firestore
                 firestore.collection("users").document(user.uid)
                     .update("profilePhotoUrl", downloadUrl)
                     .await()
 
-                fetchCurrentUser() // Refresh cached user
+                fetchCurrentUser()
                 onResult(true)
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Failed to upload profile photo: ${e.message}", e)
@@ -327,7 +311,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) ALUMNI/CONNECTION FUNCTIONS ---
     fun fetchAllAlumni() {
         val currentUserId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
@@ -342,7 +325,7 @@ class AuthViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching alumni list", e)
-                _alumniList.value = emptyList() // Clear on error
+                _alumniList.value = emptyList()
             }
         }
     }
@@ -385,7 +368,7 @@ class AuthViewModel : ViewModel() {
         val connectionId = getConnectionId(myId, otherId)
 
         val newConnection = Connection(
-            id = connectionId, // Set the ID explicitly
+            id = connectionId,
             participantIds = listOf(myId, otherId),
             senderId = myId,
             status = "pending"
@@ -441,15 +424,13 @@ class AuthViewModel : ViewModel() {
                                 NotificationItemData(
                                     id = request.id,
                                     icon = Icons.Default.PersonAdd,
-                                    title = senderName, // Use name for title
-                                    subtitle = "Sent you a connection request", // More descriptive
+                                    title = senderName,
+                                    subtitle = "Sent you a connection request",
                                     type = NotificationType.CONNECTION_REQUEST,
                                     referenceId = request.senderId
                                 )
                             )
                         }
-
-                        // TODO: Add NEW_MESSAGE notification logic here
 
                         _notifications.value = notificationList
 
@@ -458,8 +439,6 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-
-    // --- IAN'S PROJECT FUNCTIONS ---
 
     private suspend fun uploadImage(imageUri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
         if (imageUri == null) return@withContext null
@@ -550,7 +529,6 @@ class AuthViewModel : ViewModel() {
                     techStack = techStack,
                     mediaImageUrls = mediaImageUrls,
                     pdfUrl = pdfUrl ?: ""
-                    // createdAt will be set by @ServerTimestamp
                 )
 
                 firestore.collection("projects").add(newProject).await()
@@ -585,71 +563,83 @@ class AuthViewModel : ViewModel() {
     }
 
     fun fetchProjectById(projectId: String) {
-        viewModelScope.launch {
+        if (projectId.isBlank()) return
+
+        if (_projectDetailState.value !is ProjectDetailState.Success) {
             _projectDetailState.value = ProjectDetailState.Loading
-            try {
-                val document = firestore.collection("projects").document(projectId).get().await()
-                val project = document.toObject(Project::class.java)?.copy(id = document.id)
+        }
 
-                if (project != null) {
-                    _projectDetailState.value = ProjectDetailState.Success(project)
-                } else {
-                    _projectDetailState.value = ProjectDetailState.Error("Project not found.")
+        try {
+            firestore.collection("projects").document(projectId)
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.e("AuthViewModel", "Error listening to project details: ${e.message}", e)
+                        _projectDetailState.value = ProjectDetailState.Error(e.localizedMessage ?: "Failed to fetch project details.")
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        val project = snapshot.toObject(Project::class.java)?.copy(id = snapshot.id)
+                        if (project != null) {
+                            _projectDetailState.value = ProjectDetailState.Success(project)
+                        } else {
+                            _projectDetailState.value = ProjectDetailState.Error("Project data parsing failed.")
+                        }
+                    } else {
+                        _projectDetailState.value = ProjectDetailState.Error("Project not found.")
+                    }
                 }
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Error attaching project listener: ${e.message}", e)
+            _projectDetailState.value = ProjectDetailState.Error(e.localizedMessage ?: "Failed to fetch project details.")
+        }
+    }
+
+    fun postComment(projectId: String, text: String) {
+        val userId = auth.currentUser?.uid ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val userDoc = firestore.collection("users").document(userId).get().await()
+                val user = userDoc.toObject(User::class.java)
+                val userName = "${user?.firstName ?: "User"} ${user?.lastName?.firstOrNull() ?: ""}"
+                val userPhotoUrl = user?.profilePhotoUrl
+
+                val projectDocRef = firestore.collection("projects").document(projectId)
+                val commentsCollection = firestore.collection("comments")
+
+                firestore.runTransaction { transaction ->
+                    val projectSnapshot = transaction.get(projectDocRef)
+                    if (!projectSnapshot.exists()) {
+                        throw Exception("Project does not exist!")
+                    }
+
+                    val newComment = Comment(
+                        projectId = projectId,
+                        userId = userId,
+                        userName = userName,
+                        userPhotoUrl = userPhotoUrl,
+                        text = text
+                    )
+
+                    transaction.set(commentsCollection.document(), newComment)
+
+                    transaction.update(projectDocRef, "commentCount", FieldValue.increment(1))
+
+                    null
+                }.await()
+
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error fetching project by ID: ${e.message}", e)
-                _projectDetailState.value = ProjectDetailState.Error(e.localizedMessage ?: "Failed to fetch project details.")
+                Log.e("AuthViewModel", "Error posting comment: ${e.message}", e)
             }
         }
     }
 
-    // ----------------------------------------------------
-    // ✅ NEW PROJECT INTERACTION FUNCTIONS (Likes & Comments)
-    // ----------------------------------------------------
-
-    fun submitComment(projectId: String, text: String) {
-        val currentUser = _currentUser.value
-        val userId = currentUser?.userId ?: return
-        val userName = currentUser.let { "${it.firstName} ${it.lastName}" }
-        val userPhotoUrl = currentUser.profilePhotoUrl
-        if (text.isBlank()) return
-
+    fun fetchCommentsForProject(projectId: String) {
         viewModelScope.launch {
             try {
-                val newComment = Comment(
-                    projectId = projectId,
-                    userId = userId,
-                    userName = userName,
-                    userPhotoUrl = userPhotoUrl,
-                    text = text
-                )
-
-                // 1. Add comment to 'comments' collection
-                firestore.collection("comments").add(newComment).await()
-
-                // 2. Increment comment count on the project
-                firestore.collection("projects").document(projectId)
-                    .update("commentCount", FieldValue.increment(1))
-                    .await()
-            } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error submitting comment: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * Sets up a live listener for all comments belonging to a specific project.
-     * This function should be called once when entering the Project Detail screen.
-     */
-    fun fetchProjectComments(projectId: String) {
-        viewModelScope.launch {
-            try {
-                // Clear old comments first
-                _projectComments.value = emptyList()
-
                 firestore.collection("comments")
                     .whereEqualTo("projectId", projectId)
-                    .orderBy("createdAt", Query.Direction.ASCENDING)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, e ->
                         if (e != null) {
                             Log.w("AuthViewModel", "Comments listen failed.", e)
@@ -672,10 +662,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Checks if the current user has liked the project and updates the StateFlow.
-     * This function should be called when loading project details.
-     */
     fun checkIfProjectIsLiked(projectId: String) {
         val userId = auth.currentUser?.uid
         if (userId == null || projectId.isBlank()) {
@@ -700,9 +686,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Toggles the like status of a project.
-     */
     fun toggleProjectLike(projectId: String, currentlyLiked: Boolean) {
         val userId = auth.currentUser?.uid ?: return
 
@@ -712,7 +695,6 @@ class AuthViewModel : ViewModel() {
                 val projectDocRef = firestore.collection("projects").document(projectId)
 
                 if (currentlyLiked) {
-                    // Unlike: Find and delete the like document
                     likesCollection
                         .whereEqualTo("projectId", projectId)
                         .whereEqualTo("userId", userId)
@@ -720,26 +702,24 @@ class AuthViewModel : ViewModel() {
                             doc.reference.delete().await()
                         }
 
-                    // Decrement like count
                     projectDocRef.update("likes", FieldValue.increment(-1)).await()
                     _isProjectLiked.value = false
 
                 } else {
-                    // Like: Create a new like document
                     val newLike = ProjectLike(userId = userId, projectId = projectId)
                     likesCollection.add(newLike).await()
 
-                    // Increment like count
                     projectDocRef.update("likes", FieldValue.increment(1)).await()
                     _isProjectLiked.value = true
                 }
-
-                // Refresh project details to update the like count display
-                fetchProjectById(projectId)
 
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error toggling like: ${e.message}", e)
             }
         }
+    }
+
+    fun clearComments() {
+        _projectComments.value = emptyList()
     }
 }

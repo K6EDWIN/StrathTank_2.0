@@ -11,9 +11,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,9 +36,6 @@ import com.example.strathtankalumni.viewmodel.ProjectsListState
 import java.util.Calendar
 import java.util.Date
 
-// =====================================================================
-// ALUMNI PROJECTS SCREEN (List + Tabs + Search + Navigation)
-// =====================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectsScreen(
@@ -53,7 +50,6 @@ fun AlumniProjectsScreen(
     val projectsState by authViewModel.allProjectsState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
 
-    // Fetch projects when first opened
     LaunchedEffect(Unit) {
         authViewModel.fetchAllProjects()
         authViewModel.fetchCurrentUser()
@@ -76,7 +72,6 @@ fun AlumniProjectsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -89,7 +84,6 @@ fun AlumniProjectsScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            // Tabs for filtering
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -123,7 +117,6 @@ fun AlumniProjectsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Handle project state
             when (projectsState) {
                 is ProjectsListState.Loading -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -143,8 +136,8 @@ fun AlumniProjectsScreen(
                     val currentUserId = currentUser?.userId
 
                     val tabFilteredProjects = when (selectedTabIndex) {
-                        1 -> allProjects.filter { isProjectToday(it) } // Latest
-                        2 -> allProjects.filter { it.userId == currentUserId && currentUserId != null } // My projects
+                        1 -> allProjects.filter { isProjectToday(it) }
+                        2 -> allProjects.filter { it.userId == currentUserId && currentUserId != null }
                         else -> allProjects
                     }
 
@@ -160,7 +153,7 @@ fun AlumniProjectsScreen(
                                     1 -> "No projects were created today."
                                     2 -> if (currentUserId == null)
                                         "Log in to see your projects."
-                                    else "You haven't posted any projects yet."
+                                    else "You haven\'t posted any projects yet."
                                     else -> "No projects found."
                                 }
                             } else "No projects match your search."
@@ -202,9 +195,6 @@ fun AlumniProjectsScreen(
     }
 }
 
-// =====================================================================
-// HELPER COMPOSABLES
-// =====================================================================
 private fun isProjectToday(project: Project): Boolean {
     val projectDate: Date? = project.createdAt
     if (projectDate == null) return false
@@ -259,12 +249,9 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             )
         }
     }
-    Divider(modifier = Modifier.padding(top = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 }
 
-// =====================================================================
-// PROJECT DETAIL SCREEN (Uses AuthViewModel)
-// =====================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectDetailScreen(
@@ -277,22 +264,13 @@ fun AlumniProjectDetailScreen(
     LaunchedEffect(projectId) {
         if (!projectId.isNullOrBlank()) {
             authViewModel.fetchProjectById(projectId)
-            authViewModel.fetchProjectComments(projectId)
+            authViewModel.fetchCommentsForProject(projectId)
             authViewModel.checkIfProjectIsLiked(projectId)
         }
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Project Details") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
+        // topBar was removed here to eliminate the duplicate back button
     ) { paddingValues ->
         Box(
             modifier = Modifier
