@@ -1,11 +1,9 @@
 // megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniProjectsScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
-// ❌ REMOVE THIS
-// import coil.compose.rememberAsyncImagePainter
+// ❌ REMOVE THIS: import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-// ❌ REMOVE THIS
-// import androidx.compose.foundation.Image
+// ❌ REMOVE THIS: import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,9 +12,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ CHANGED
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +46,7 @@ import java.util.Date
 // ✅ 1. ADD THESE IMPORTS
 import coil.compose.AsyncImage
 import androidx.compose.ui.res.painterResource
+import coil.size.Size // ✅ 2. IMPORT COIL SIZE
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,7 +90,7 @@ fun AlumniProjectsScreen(
 
         Column(
             modifier = Modifier
-                .padding(innerPadding)
+                .padding(innerPadding) // Use padding from Scaffold
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
@@ -253,13 +252,13 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ✅ 2. THIS IS THE CRASH FIX
-        // Replaced Image() with AsyncImage() and added allowHardware(false)
+        // ✅ 3. THIS IS THE CRASH FIX
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(project.imageUrl.ifEmpty { R.drawable.sample_museum })
                 .crossfade(true)
-                .allowHardware(false) // <-- FIX
+                .size(Size(256, 256)) // <-- DOWNSCALE THE IMAGE
+                .allowHardware(false) // <-- AVOID HARDWARE BITMAP
                 .build(),
             placeholder = painterResource(id = R.drawable.sample_museum),
             error = painterResource(id = R.drawable.sample_museum),
@@ -319,9 +318,10 @@ fun AlumniProjectDetailScreen(
                 title = { Text("Project Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) // ✅ Added
             )
         }
     ) { paddingValues ->
@@ -340,7 +340,7 @@ fun AlumniProjectDetailScreen(
                     Text(text = "Error loading project: ${state.message}", color = MaterialTheme.colorScheme.error)
                 }
                 is ProjectDetailState.Success -> {
-                    // ✅ 3. THIS IS THE NAVIGATION FIX
+                    // ✅ 4. THIS IS THE NAVIGATION FIX
                     // Pass all required parameters to the real ProjectViewScreen
                     ProjectViewScreen(
                         project = state.project,

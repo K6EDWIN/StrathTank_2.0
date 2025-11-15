@@ -33,6 +33,7 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.Collaboration
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import coil.size.Size // ✅ IMPORT
 
 @Composable
 fun AlumniCollaborationsScreen(
@@ -137,7 +138,8 @@ private fun CollaborationCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(collaboration.projectImageUrl.ifEmpty { R.drawable.sample_featured })
                     .crossfade(true)
-                    .allowHardware(false) // ✅ --- THIS IS THE FIX ---
+                    .size(Size(1024, 1024)) // ✅ --- CRASH FIX ---
+                    .allowHardware(false)
                     .build(),
                 contentDescription = collaboration.projectTitle,
                 modifier = Modifier

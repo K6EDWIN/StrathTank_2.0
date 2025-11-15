@@ -42,9 +42,9 @@ import com.example.strathtankalumni.data.Connection
 // import com.example.strathtankalumni.data.ConnectionStatus // This enum doesn't exist, remove it
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-// ✅ 1. ADD THIS IMPORT
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.ExperimentalLayoutApi // ✅ IMPORT
 import com.example.strathtankalumni.data.ExperienceItem
+import coil.size.Size // ✅ IMPORT
 
 // This Project class is a local-only placeholder, which is fine.
 data class Project(
@@ -162,7 +162,8 @@ fun OtherUserProfileScreen(
                             .data(userData.profilePhotoUrl.takeIf { !it.isNullOrBlank() }
                                 ?: R.drawable.noprofile)
                             .crossfade(true)
-                            .allowHardware(false) // Fix for large image crash
+                            .size(Size(256, 256)) // ✅ --- CRASH FIX 1 ---
+                            .allowHardware(false)
                             .build(),
                         contentDescription = "Profile photo",
                         modifier = Modifier
@@ -341,8 +342,7 @@ fun OtherUserProfileScreen(
                                 fontSize = 14.sp
                             )
                         } else {
-                            // The file you provided has ReadOnlyFlowRow
-                            // I am assuming it should be ViewOnlyFlowRow to match the error
+                            // Use the private function
                             ViewOnlyFlowRow(items = userData.skills)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
@@ -458,7 +458,7 @@ private fun ContactRow(
 }
 
 
-// ✅ 2. ADD 'private' TO FIX THE CONFLICT
+// ✅ 2. MADE THIS FUNCTION private TO FIX CONFLICT
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ViewOnlyFlowRow(items: List<String>) {
@@ -525,7 +525,8 @@ fun ProjectCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(project.imageUrl.ifBlank { R.drawable.noprofile })
                     .crossfade(true)
-                    .allowHardware(false) // Fix for large image crash
+                    .size(Size(1024, 1024)) // ✅ --- CRASH FIX 2 ---
+                    .allowHardware(false)
                     .build(),
                 contentDescription = project.title,
                 modifier = Modifier

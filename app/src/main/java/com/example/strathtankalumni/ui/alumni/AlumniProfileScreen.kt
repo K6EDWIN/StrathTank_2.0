@@ -47,9 +47,8 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.ExperienceItem
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-
-// ✅ 1. ADD THIS IMPORT
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.ExperimentalLayoutApi // ✅ IMPORT
+import coil.size.Size // ✅ IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -142,7 +141,8 @@ fun AlumniProfileScreen(
                         model = ImageRequest.Builder(context)
                             .data(currentUser?.profilePhotoUrl)
                             .crossfade(true)
-                            .allowHardware(false) // Fix for large image crash
+                            .size(Size(256, 256)) // ✅ --- CRASH FIX ---
+                            .allowHardware(false)
                             .build(),
                         contentDescription = "Profile photo",
                         modifier = Modifier.fillMaxSize(),
@@ -396,7 +396,6 @@ fun AlumniProfileScreen(
             ) {
                 when (tabIndex) {
                     0 -> Text("No projects yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                    // ✅ THIS IS THE FIX FROM STEP 29
                     1 -> AlumniCollaborationsScreen(
                         navController = alumniNavController,
                         authViewModel = authViewModel

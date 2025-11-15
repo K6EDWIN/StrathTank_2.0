@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ IMPORT
 import androidx.compose.material.icons.automirrored.filled.Send // ✅ IMPORT
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -45,6 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.LocalIndication // ✅ IMPORT
+import coil.size.Size // ✅ IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -97,6 +99,7 @@ fun ProjectViewScreen(
         }
     }
 
+    // This Column replaces the old Column
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -111,7 +114,8 @@ fun ProjectViewScreen(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(project.imageUrl.ifEmpty { R.drawable.sample_featured })
                 .crossfade(true)
-                .allowHardware(false) // ✅ --- CRASH FIX 1 ---
+                .size(Size(1024, 1024)) // ✅ --- CRASH FIX 1 ---
+                .allowHardware(false)
                 .build(),
             contentDescription = "Project Cover Image",
             modifier = Modifier
@@ -229,7 +233,8 @@ fun ProjectViewScreen(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageUrl)
                             .crossfade(true)
-                            .allowHardware(false) // ✅ --- CRASH FIX 2 ---
+                            .size(Size(1024, 1024)) // ✅ --- CRASH FIX 2 ---
+                            .allowHardware(false)
                             .build(),
                         contentDescription = "Project Media Image",
                         modifier = Modifier
@@ -432,7 +437,8 @@ private fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, cu
             model = ImageRequest.Builder(LocalContext.current)
                 .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
-                .allowHardware(false) // ✅ --- CRASH FIX 3 ---
+                .size(Size(128, 128)) // ✅ --- CRASH FIX 3 ---
+                .allowHardware(false)
                 .build(),
             contentDescription = "User Photo",
             modifier = Modifier
@@ -493,7 +499,8 @@ private fun CommentItem(comment: Comment) {
             model = ImageRequest.Builder(LocalContext.current)
                 .data(comment.userPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
-                .allowHardware(false) // ✅ --- CRASH FIX 4 ---
+                .size(Size(128, 128)) // ✅ --- CRASH FIX 4 ---
+                .allowHardware(false)
                 .build(),
             contentDescription = "User Photo",
             modifier = Modifier

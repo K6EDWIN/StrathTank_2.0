@@ -1,13 +1,12 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniAddProjectsPage.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-// ✅ ADDED IMPORTS
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.MutableInteractionSource
-// -----------------
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ CHANGED
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +32,16 @@ import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectState
+import androidx.compose.foundation.lazy.LazyRow // ✅ ADDED
+import androidx.compose.foundation.lazy.items // ✅ ADDED
+import androidx.compose.ui.platform.LocalFocusManager // ✅ ADDED
+import androidx.compose.ui.res.painterResource // ✅ ADDED
+import androidx.compose.foundation.text.KeyboardActions // ✅ ADDED
+import androidx.compose.foundation.text.KeyboardOptions // ✅ ADDED
+import androidx.compose.ui.text.input.ImeAction // ✅ ADDED
+import coil.request.ImageRequest // ✅ ADDED
+import com.example.strathtankalumni.R // ✅ ADDED
+import coil.size.Size // ✅ ADDED
 
 // List of available categories/tags
 private val allTags = listOf(
@@ -65,6 +75,7 @@ fun AlumniAddProjectsPage(
 ) {
     val context = LocalContext.current
     val projectState by authViewModel.projectState.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     // State for project fields
     var title by remember { mutableStateOf("") }
@@ -181,9 +192,10 @@ fun AlumniAddProjectsPage(
                 title = { Text("Add New Project") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) // ✅
             )
         },
         bottomBar = {
@@ -236,7 +248,7 @@ fun AlumniAddProjectsPage(
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- Project Cover Image Uploader ---
-            Text("Project Cover Image (Optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Project Cover Image (Required)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
@@ -244,7 +256,6 @@ fun AlumniAddProjectsPage(
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    // ✅ APPLIED FIX 1
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = LocalIndication.current,
@@ -253,11 +264,18 @@ fun AlumniAddProjectsPage(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
+                    // ✅ --- CRASH FIX 1 ---
                     AsyncImage(
-                        model = imageUri,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUri)
+                            .crossfade(true)
+                            .size(Size(1024, 1024)) // <-- FIX
+                            .allowHardware(false) // <-- FIX
+                            .build(),
                         contentDescription = "Project Cover Image",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.sample_featured)
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -272,28 +290,35 @@ fun AlumniAddProjectsPage(
             // --- NEW: Project Media Images (Gallery) ---
             Text("Project Gallery Images (Optional, Multiple)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+
+            // ✅ Replaced FlowRow with LazyRow
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Display selected images
-                mediaImageUris.forEachIndexed { index, uri ->
+                items(mediaImageUris) { uri ->
                     Box(
                         modifier = Modifier
                             .size(100.dp)
                             .clip(RoundedCornerShape(8.dp))
                     ) {
+                        // ✅ --- CRASH FIX 2 ---
                         AsyncImage(
-                            model = uri,
-                            contentDescription = "Project Media $index",
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(uri)
+                                .crossfade(true)
+                                .size(Size(256, 256)) // <-- FIX
+                                .allowHardware(false) // <-- FIX
+                                .build(),
+                            contentDescription = "Project Media",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(id = R.drawable.sample_featured)
                         )
                         // Remove button
                         IconButton(
                             onClick = {
-                                mediaImageUris = mediaImageUris.toMutableList().apply { removeAt(index) }
+                                mediaImageUris = mediaImageUris - uri
                             },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -307,20 +332,21 @@ fun AlumniAddProjectsPage(
                 }
 
                 // Add button
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                        // ✅ APPLIED FIX 2
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = LocalIndication.current,
-                            onClick = { mediaImagePickerLauncher.launch("image/*") }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Image", tint = Color.Gray)
+                item {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = LocalIndication.current,
+                                onClick = { mediaImagePickerLauncher.launch("image/*") }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Image", tint = Color.Gray)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -334,7 +360,6 @@ fun AlumniAddProjectsPage(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    // ✅ APPLIED FIX 3
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = LocalIndication.current,
@@ -407,7 +432,8 @@ fun AlumniAddProjectsPage(
             Spacer(modifier = Modifier.height(8.dp))
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp) // ✅
             ) {
                 PROJECT_TYPES.forEach { type ->
                     val isSelected = projectType == type
@@ -542,7 +568,7 @@ fun TechSelectionRow(
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp) // ✅
     ) {
         availableTags.forEach { tag ->
             val isSelected = selectedTags.contains(tag)
@@ -564,7 +590,7 @@ fun TechSelectionRow(
                     selectedLabelColor = Color.White,
                     selectedLeadingIconColor = Color.White,
                     containerColor = Color(0xFFEEEEEE),
-                    labelColor = Color(0xFF666666)
+                    labelColor = Color(0xFF666666) // ✅
                 ),
                 shape = RoundedCornerShape(24.dp)
             )

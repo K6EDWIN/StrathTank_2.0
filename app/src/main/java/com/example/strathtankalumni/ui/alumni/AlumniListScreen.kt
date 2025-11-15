@@ -30,6 +30,7 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import coil.size.Size // ✅ IMPORT
 
 @Composable
 fun AlumniListScreen(
@@ -95,7 +96,7 @@ fun AlumniItem(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = null, // ✅ CHANGED: Was LocalIndication.current
                 onClick = onClick
             )
             .padding(vertical = 8.dp),
@@ -105,7 +106,8 @@ fun AlumniItem(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(user.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
                 .crossfade(true)
-                .allowHardware(false) // ✅ --- THIS IS THE FIX ---
+                .size(Size(128, 128)) // ✅ --- CRASH FIX ---
+                .allowHardware(false)
                 .build(),
             contentDescription = "Profile Photo",
             modifier = Modifier

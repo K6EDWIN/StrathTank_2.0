@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import coil.size.Size // ✅ IMPORT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,7 +115,8 @@ fun CollaborationDetailScreen(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(member.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
                                 .crossfade(true)
-                                .allowHardware(false) // ✅ --- THIS IS THE FIX ---
+                                .size(Size(128, 128)) // ✅ --- CRASH FIX ---
+                                .allowHardware(false)
                                 .build(),
                             contentDescription = member.firstName,
                             modifier = Modifier
