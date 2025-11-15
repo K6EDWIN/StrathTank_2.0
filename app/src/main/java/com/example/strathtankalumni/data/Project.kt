@@ -4,24 +4,6 @@ import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
-// -------------------------
-// Data class for a Comment
-// -------------------------
-data class Comment(
-    @get:Exclude var id: String = "",
-    val projectId: String = "", // Link to the project
-    val userId: String = "",
-    val userName: String = "", // Display name for comment list
-    val userPhotoUrl: String? = null,
-    val text: String = "",
-    val parentCommentId: String? = null, // For replies (if implemented later)
-    val likes: Int = 0,
-    @ServerTimestamp
-    val createdAt: Date? = null,
-    // Add isLiked state for UI tracking (client-side)
-    val isLiked: Boolean = false
-)
-
 // -------------------------------------
 // Data class for a Project Like
 // This document's ID will be projectId_userId

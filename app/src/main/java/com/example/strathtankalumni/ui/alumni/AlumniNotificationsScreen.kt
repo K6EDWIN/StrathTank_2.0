@@ -1,3 +1,4 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniNotificationsScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.LocalIndication // ✅ IMPORT ADDED
@@ -84,6 +85,14 @@ fun AlumniNotificationsScreen(
                                         )
                                     }
                                 }
+                                // --- NEW CASE ---
+                                NotificationType.COLLABORATION_REQUEST -> {
+                                    notification.referenceId?.let { collaborationId ->
+                                        navController.navigate(
+                                            Screen.CollaborationDetail.createRoute(collaborationId)
+                                        )
+                                    }
+                                }
                                 NotificationType.NEW_MESSAGE -> {
                                     // TODO: Navigate to DM screen
                                 }
@@ -110,7 +119,6 @@ fun NotificationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            // ✅ THIS IS THE FIX
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current,

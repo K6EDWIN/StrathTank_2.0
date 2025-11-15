@@ -1,3 +1,4 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniOtherProfilesScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.content.Intent
@@ -13,9 +14,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Corrected import
+import androidx.compose.material.icons.filled.Business // Corrected import
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Message // Corrected import
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,22 +39,34 @@ import coil.request.ImageRequest
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.data.Connection
-import com.example.strathtankalumni.data.ConnectionStatus
+// import com.example.strathtankalumni.data.ConnectionStatus // This enum doesn't exist, remove it
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+// ✅ 1. ADD THIS IMPORT
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import com.example.strathtankalumni.data.ExperienceItem
 
+// This Project class is a local-only placeholder, which is fine.
 data class Project(
     val title: String = "",
     val description: String = "",
     val imageUrl: String = ""
 )
 
+// Re-creating this enum locally as it's not in the data layer
+enum class ConnectionStatus {
+    NONE,
+    PENDING_SENT,
+    PENDING_RECEIVED,
+    ACCEPTED
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun OtherUserProfileScreen(
     userId: String,
-    navController: NavHostController, // This is the nested alumniNavController
-    mainNavController: NavHostController, // ✅ ADDED: This is the main NavController
+    navController: NavHostController,
+    mainNavController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -74,6 +89,7 @@ fun OtherUserProfileScreen(
         authViewModel.loadConnections()
         authViewModel.fetchAllAlumni()
 
+        // This is placeholder data, as per your file
         userProjects = listOf(
             Project(
                 "AI-Powered Recommendation System",
@@ -108,8 +124,8 @@ fun OtherUserProfileScreen(
             TopAppBar(
                 title = { Text("Alumni Profile") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) { // Use nested controller for Back
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -125,6 +141,7 @@ fun OtherUserProfileScreen(
                 Text("User not found.")
             }
         } else {
+            val userData = userProfile!!
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -142,9 +159,10 @@ fun OtherUserProfileScreen(
 
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(userProfile?.profilePhotoUrl.takeIf { !it.isNullOrBlank() }
+                            .data(userData.profilePhotoUrl.takeIf { !it.isNullOrBlank() }
                                 ?: R.drawable.noprofile)
                             .crossfade(true)
+                            .allowHardware(false) // Fix for large image crash
                             .build(),
                         contentDescription = "Profile photo",
                         modifier = Modifier
@@ -158,7 +176,7 @@ fun OtherUserProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "${userProfile?.firstName ?: ""} ${userProfile?.lastName ?: ""}".trim(),
+                        text = "${userData.firstName} ${userData.lastName}".trim(),
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
                     )
@@ -166,12 +184,12 @@ fun OtherUserProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     val classMajorText = buildString {
-                        if (userProfile?.graduationYear?.isNotBlank() == true) {
-                            append("Class of ${userProfile!!.graduationYear}")
+                        if (userData.graduationYear.isNotBlank()) {
+                            append("Class of ${userData.graduationYear}")
                         }
-                        if (userProfile?.degree?.isNotBlank() == true) {
+                        if (userData.degree.isNotBlank()) {
                             if (this.isNotEmpty()) append(" | ")
-                            append(userProfile!!.degree)
+                            append(userData.degree)
                         }
                     }.ifEmpty { "No education details provided" }
 
@@ -182,7 +200,7 @@ fun OtherUserProfileScreen(
                     )
 
                     Text(
-                        text = userProfile?.country.takeIf { !it.isNullOrBlank() }
+                        text = userData.country.takeIf { !it.isNullOrBlank() }
                             ?: "No location provided",
                         color = Color.Gray,
                         fontSize = 14.sp
@@ -198,7 +216,7 @@ fun OtherUserProfileScreen(
                             ConnectionStatus.NONE -> {
                                 Button(
                                     onClick = {
-                                        authViewModel.sendConnectionRequest(userProfile!!)
+                                        authViewModel.sendConnectionRequest(userData)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(8.dp)
@@ -242,11 +260,10 @@ fun OtherUserProfileScreen(
                             ConnectionStatus.ACCEPTED -> {
                                 Button(
                                     onClick = {
-                                        // ✅ MODIFIED: Use mainNavController
                                         mainNavController.navigate(
                                             Screen.DirectMessage.createRoute(
-                                                userName = "${userProfile?.firstName} ${userProfile?.lastName}",
-                                                otherUserId = userProfile!!.userId
+                                                userName = "${userData.firstName} ${userData.lastName}",
+                                                otherUserId = userData.userId
                                             )
                                         )
                                     },
@@ -258,7 +275,7 @@ fun OtherUserProfileScreen(
                             }
                         }
 
-                        val linkedIn = userProfile?.linkedinUrl
+                        val linkedIn = userData.linkedinUrl
                         val hasLinkedIn = !linkedIn.isNullOrBlank()
 
                         if (hasLinkedIn) {
@@ -290,9 +307,24 @@ fun OtherUserProfileScreen(
 
                     ProfileSection(
                         "About",
-                        userProfile?.about.takeIf { !it.isNullOrBlank() }
+                        userData.about.takeIf { !it.isNullOrBlank() }
                             ?: "No about information provided."
                     )
+
+                    // Corrected Experience Section
+                    Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.align(Alignment.Start))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (userData.experience.isEmpty()) {
+                        Text("No experience added", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            userData.experience.forEach { item ->
+                                ExperienceItemView(item = item) // This composable is needed
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
@@ -302,14 +334,16 @@ fun OtherUserProfileScreen(
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        if (userProfile?.skills.isNullOrEmpty()) {
+                        if (userData.skills.isNullOrEmpty()) {
                             Text(
                                 "No skills listed.",
                                 color = Color.Gray,
                                 fontSize = 14.sp
                             )
                         } else {
-                            ReadOnlyFlowRow(items = userProfile!!.skills)
+                            // The file you provided has ReadOnlyFlowRow
+                            // I am assuming it should be ViewOnlyFlowRow to match the error
+                            ViewOnlyFlowRow(items = userData.skills)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -324,7 +358,7 @@ fun OtherUserProfileScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         ContactRow(
                             icon = Icons.Default.Email,
-                            text = userProfile?.email ?: "No email provided."
+                            text = userData.email
                         )
                     }
 
@@ -424,11 +458,10 @@ private fun ContactRow(
 }
 
 
+// ✅ 2. ADD 'private' TO FIX THE CONFLICT
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ReadOnlyFlowRow(
-    items: List<String>
-) {
+private fun ViewOnlyFlowRow(items: List<String>) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -441,6 +474,35 @@ fun ReadOnlyFlowRow(
                 colors = SuggestionChipDefaults.suggestionChipColors(
                     containerColor = Color(0xFFF1F3F4)
                 ),
+            )
+        }
+    }
+}
+
+// (This was missing from the user's file, but is required by the code)
+@Composable
+private fun ExperienceItemView(item: ExperienceItem) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            Icons.Default.Business,
+            contentDescription = null,
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color.LightGray, CircleShape)
+                .padding(8.dp),
+            tint = Color.DarkGray
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(item.role, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(item.companyName, fontSize = 14.sp)
+            Text(
+                text = "${item.startDate} - ${if (item.isCurrent) "Present" else item.endDate}",
+                color = Color.Gray,
+                fontSize = 12.sp
             )
         }
     }
@@ -463,6 +525,7 @@ fun ProjectCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(project.imageUrl.ifBlank { R.drawable.noprofile })
                     .crossfade(true)
+                    .allowHardware(false) // Fix for large image crash
                     .build(),
                 contentDescription = project.title,
                 modifier = Modifier

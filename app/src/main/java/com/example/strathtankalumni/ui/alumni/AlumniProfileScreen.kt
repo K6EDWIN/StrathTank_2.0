@@ -1,3 +1,4 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniProfileScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.content.Intent
@@ -43,9 +44,12 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
-import com.example.strathtankalumni.data.ExperienceItem // 🚀 IMPORT
+import com.example.strathtankalumni.data.ExperienceItem
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+
+// ✅ 1. ADD THIS IMPORT
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -61,7 +65,6 @@ fun AlumniProfileScreen(
     var isEditing by remember { mutableStateOf(false) }
     var about by remember { mutableStateOf("") }
 
-    // 🚀 MODIFIED
     var experienceList by remember { mutableStateOf(listOf<ExperienceItem>()) }
 
     var newSkill by remember { mutableStateOf("") }
@@ -69,7 +72,6 @@ fun AlumniProfileScreen(
     var linkedinUrl by remember { mutableStateOf("") }
     var editingLinkedIn by remember { mutableStateOf(false) }
 
-    // 🚀 ADDED
     var showExperienceDialog by remember { mutableStateOf(false) }
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -93,13 +95,12 @@ fun AlumniProfileScreen(
     LaunchedEffect(currentUser) {
         currentUser?.let {
             about = it.about.ifBlank { "No about yet" }
-            experienceList = it.experience // 🚀 MODIFIED
+            experienceList = it.experience
             skills = it.skills
             linkedinUrl = it.linkedinUrl
         }
     }
 
-    // 🚀 ADDED: Show the dialog
     if (showExperienceDialog) {
         ExperienceEntryDialog(
             onDismiss = { showExperienceDialog = false },
@@ -117,7 +118,7 @@ fun AlumniProfileScreen(
             .verticalScroll(rememberScrollState()),
     ) {
 
-        // --- 1. Centered Header Section (No changes) ---
+        // --- 1. Centered Header Section ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -141,10 +142,12 @@ fun AlumniProfileScreen(
                         model = ImageRequest.Builder(context)
                             .data(currentUser?.profilePhotoUrl)
                             .crossfade(true)
+                            .allowHardware(false) // Fix for large image crash
                             .build(),
                         contentDescription = "Profile photo",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.noprofile)
                     )
                 } else {
                     Image(
@@ -176,7 +179,6 @@ fun AlumniProfileScreen(
             Button(
                 onClick = {
                     if (isEditing) {
-                        // 🚀 MODIFIED
                         authViewModel.updateUserProfile(
                             about = about,
                             experience = experienceList,
@@ -211,7 +213,6 @@ fun AlumniProfileScreen(
                 // --- View Mode ---
                 ProfileSection("About", about)
 
-                // 🚀 NEW EXPERIENCE VIEW
                 Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 if (experienceList.isEmpty()) {
@@ -224,7 +225,6 @@ fun AlumniProfileScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                // --- END NEW SECTION ---
 
                 Text("Skills", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -235,7 +235,6 @@ fun AlumniProfileScreen(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ... (Contact Section is unchanged) ...
                 Text("Contact", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 ContactRow(Icons.Default.Email, currentUser?.email ?: "Not available")
@@ -299,7 +298,7 @@ fun AlumniProfileScreen(
                         onClick = {
                             authViewModel.updateUserProfile(
                                 about = about,
-                                experience = experienceList, // 🚀 MODIFIED
+                                experience = experienceList,
                                 skills = skills,
                                 linkedinUrl = linkedinUrl
                             ) { success ->
@@ -320,7 +319,6 @@ fun AlumniProfileScreen(
                 // --- Editable Mode ---
                 EditableSection("About", about) { about = it }
 
-                // 🚀 NEW EXPERIENCE EDIT
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -347,8 +345,6 @@ fun AlumniProfileScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                // --- END NEW SECTION ---
-
 
                 Text("Skills & Interests", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -377,7 +373,6 @@ fun AlumniProfileScreen(
                 }
             }
 
-            // ... (Rest of the code: Tabs, Logout Button) ...
             Spacer(modifier = Modifier.height(24.dp))
 
             var tabIndex by remember { mutableStateOf(0) }
@@ -395,12 +390,17 @@ fun AlumniProfileScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                contentAlignment = Alignment.Center
+                    .padding(vertical = 32.dp)
+                    .heightIn(min=200.dp), // Added height
+                contentAlignment = Alignment.TopCenter // Changed
             ) {
                 when (tabIndex) {
                     0 -> Text("No projects yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                    1 -> Text("No collaborations yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                    // ✅ THIS IS THE FIX FROM STEP 29
+                    1 -> AlumniCollaborationsScreen(
+                        navController = alumniNavController,
+                        authViewModel = authViewModel
+                    )
                 }
             }
 
@@ -455,7 +455,7 @@ private fun ContactRow(
     }
 }
 
-// 🚀 MODIFIED: This now only handles text editing for "About"
+// (EditableSection is unchanged)
 @Composable
 private fun EditableSection(
     title: String,
@@ -525,10 +525,10 @@ fun FlowRowLayout(
     }
 }
 
-// (ViewOnlyFlowRow is unchanged)
+// ✅ 2. ADD 'private' TO FIX THE CONFLICT
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ViewOnlyFlowRow(items: List<String>) {
+private fun ViewOnlyFlowRow(items: List<String>) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -546,8 +546,7 @@ fun ViewOnlyFlowRow(items: List<String>) {
     }
 }
 
-// 🚀 --- ALL NEW COMPOSABLES FOR EXPERIENCE ---
-
+// (ExperienceItemView is unchanged)
 @Composable
 private fun ExperienceItemView(item: ExperienceItem) {
     Row(
@@ -576,6 +575,7 @@ private fun ExperienceItemView(item: ExperienceItem) {
     }
 }
 
+// (ExperienceItemEditView is unchanged)
 @Composable
 private fun ExperienceItemEditView(
     item: ExperienceItem,
@@ -592,7 +592,6 @@ private fun ExperienceItemEditView(
             Text(item.role, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(item.companyName, fontSize = 14.sp)
         }
-        // Add edit/delete buttons
         IconButton(onClick = { /* TODO: Implement edit */ }) {
             Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
         }
@@ -602,6 +601,7 @@ private fun ExperienceItemEditView(
     }
 }
 
+// (ExperienceEntryDialog is unchanged)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExperienceEntryDialog(

@@ -1,10 +1,13 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/ProjectViewScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
-import android.util.Log
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import androidx.compose.foundation.Image
+import android.content.Intent
+import android.net.Uri
+import android.util.Log // ✅ IMPORT
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -13,8 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send // ✅ IMPORT
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,47 +24,61 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector // ✅ IMPORT
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.strathtankalumni.viewmodel.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import coil.compose.AsyncImage // ✅ IMPORT
+import coil.request.ImageRequest
+import com.example.strathtankalumni.R
+import com.example.strathtankalumni.data.Comment // ✅ IMPORT
 import com.example.strathtankalumni.data.Project
-import com.example.strathtankalumni.data.Comment
+import com.example.strathtankalumni.navigation.Screen
+import com.example.strathtankalumni.viewmodel.AuthViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.LocalIndication // ✅ IMPORT
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ProjectViewScreen(
     project: Project,
     onBack: () -> Unit,
-    authViewModel: AuthViewModel
+    // ✅ 1. ADD THESE PARAMETERS
+    navController: NavHostController,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    // --- State from ViewModel ---
     val comments by authViewModel.projectComments.collectAsState()
-    val isLiked by authViewModel.isProjectLiked.collectAsState(initial = project.isLiked)
+    val isLiked by authViewModel.isProjectLiked.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
 
-    // Fetch comments when project changes
+    // --- Collaboration State ---
+    val collaborations by authViewModel.collaborations.collectAsState()
+    val myCollaboration = remember(collaborations, project, currentUser) {
+        collaborations.find {
+            it.projectId == project.id && it.collaboratorId == currentUser?.userId
+        }
+    }
+
+    // --- Load comments ---
     LaunchedEffect(project.id) {
         Log.d("ProjectViewScreen", "Fetching comments for project: ${project.id}")
         authViewModel.fetchCommentsForProject(project.id)
     }
 
-    // Log when comments update
-    LaunchedEffect(comments) {
-        Log.d("ProjectViewScreen", "Comments updated: ${comments.size} comments received")
-        comments.forEach { comment ->
-            Log.d("ProjectViewScreen", "Comment: ${comment.text}, User: ${comment.userName}, Date: ${comment.createdAt}")
-        }
-    }
-
-    // Clear comments when leaving screen
+    // --- Clear comments on exit ---
     DisposableEffect(project.id) {
         onDispose {
             Log.d("ProjectViewScreen", "Clearing comments for project: ${project.id}")
@@ -70,159 +86,248 @@ fun ProjectViewScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(project.title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+    // --- Helper function ---
+    val openUrl: (String) -> Unit = { url ->
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show()
         }
-    ) { innerPadding ->
-        Column(
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .background(Color.White)
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(Modifier.height(12.dp))
+
+        // ---- Project Image (Cover) ----
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(project.imageUrl.ifEmpty { R.drawable.sample_featured })
+                .crossfade(true)
+                .allowHardware(false) // ✅ --- CRASH FIX 1 ---
+                .build(),
+            contentDescription = "Project Cover Image",
             modifier = Modifier
-                .padding(innerPadding)
-                .verticalScroll(scrollState)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.sample_featured)
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // ---- Project Details ----
+        Text(project.title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(
+            project.description,
+            fontSize = 14.sp,
+            color = Color.DarkGray,
+            lineHeight = 20.sp
+        )
+        Spacer(Modifier.height(12.dp))
+
+        // ---- Likes and Comments ----
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Project Image
-            Image(
-                painter = rememberAsyncImagePainter(
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(project.imageUrl)
-                        .crossfade(true)
-                        .build()
-                ),
-                contentDescription = "Project Image",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Project Title and Date
-            Text(
-                text = project.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = project.createdAt?.let { "Posted on ${dateFormatter.format(it)}" } ?: "Date N/A",
-                color = Color.Gray,
-                fontSize = 13.sp
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            // Like and Comment Counts
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                IconButton(
-                    onClick = { authViewModel.toggleProjectLike(project.id, isLiked) }
-                ) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Like",
-                        tint = if (isLiked) Color.Red else Color.Gray
-                    )
-                }
-                Text("${project.likes}", fontSize = 14.sp, color = Color.Gray)
-
-                Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments", tint = Color.Gray)
-                Text(
-                    text = "${project.commentCount}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+            IconButton(onClick = {
+                authViewModel.toggleProjectLike(project.id, isLiked)
+            }) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like",
+                    tint = if (isLiked) Color.Red else Color.Gray
                 )
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-            // Description Section
-            Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            Text(project.description, style = MaterialTheme.typography.bodyLarge)
-            Spacer(Modifier.height(16.dp))
-
-            // Resources Section
-            if (project.projectUrl.isNotBlank() || project.githubUrl.isNotBlank() || project.pdfUrl.isNotBlank()) {
-                Text("Resources", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(8.dp))
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (project.projectUrl.isNotBlank())
-                        ProjectLinkChip("Live Project", Icons.Default.OpenInBrowser) {}
-                    if (project.githubUrl.isNotBlank())
-                        ProjectLinkChip("GitHub Repo", Icons.Default.OpenInBrowser) {}
-                    if (project.pdfUrl.isNotBlank())
-                        ProjectLinkChip("Documentation (PDF)", Icons.Default.PictureAsPdf) {}
-                }
-                Spacer(Modifier.height(16.dp))
-            }
-
-            // Tech Stack Section
-            val techTags = project.programmingLanguages + project.databaseUsed + project.techStack
-            if (techTags.isNotEmpty()) {
-                Text("Tech Stack", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(techTags) { tag -> ProjectTag(tag) }
-                }
-                Spacer(Modifier.height(24.dp))
-            }
-
-            // Comments Section
-            CommentSection(
-                projectId = project.id,
-                comments = comments,
-                authViewModel = authViewModel,
-                currentUserPhotoUrl = currentUser?.profilePhotoUrl
+            Text(project.likes.toString(), fontSize = 14.sp) // Use dynamic project.likes
+            Icon(
+                imageVector = Icons.Default.ChatBubbleOutline,
+                contentDescription = "Comments",
+                tint = Color.Gray
             )
-
-            Spacer(Modifier.height(32.dp))
+            Text(project.commentCount.toString(), fontSize = 14.sp) // Use dynamic project.commentCount
         }
+        Spacer(Modifier.height(20.dp))
+
+        // --- GitHub & Live Demo Section ---
+        Text("Links", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+
+        if (project.projectUrl.isNotBlank()) {
+            ProjectLinkButton("View Live Demo", Icons.Default.OpenInBrowser) { openUrl(project.projectUrl) }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        if (project.githubUrl.isNotBlank()) {
+            ProjectLinkButton("View on GitHub", Icons.Default.Code) { openUrl(project.githubUrl) }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // ✅ 2. DYNAMIC COLLABORATION BUTTON
+        if (currentUser?.userId != project.userId) { // Only show if NOT the project owner
+            val buttonText = when (myCollaboration?.status) {
+                "pending" -> "Request Sent"
+                "accepted" -> "View Collaboration"
+                "declined", "left" -> "Request Collaboration"
+                null -> "Request Collaboration"
+                else -> "Request Collaboration"
+            }
+            val isEnabled = myCollaboration?.status != "pending"
+
+            OutlinedButton(
+                onClick = {
+                    when (myCollaboration?.status) {
+                        "accepted" -> {
+                            navController.navigate(Screen.CollaborationDetail.createRoute(myCollaboration.id))
+                        }
+                        null, "declined", "left" -> {
+                            authViewModel.requestCollaboration(project)
+                            Toast.makeText(context, "Collaboration request sent!", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> { /* Do nothing if pending */ }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                enabled = isEnabled
+            ) {
+                Text(buttonText)
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        // --- End Links Section ---
+
+        // ---- Tags ----
+        val techTags = (project.programmingLanguages + project.databaseUsed + project.techStack).distinct()
+        if (techTags.isNotEmpty()) {
+            Text("Tech Stack", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                techTags.forEach { tag -> ProjectTag(tag) }
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+
+        // ---- Project Media Section ----
+        if (project.mediaImageUrls.isNotEmpty()) {
+            Text("Project Media", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(project.mediaImageUrls) { imageUrl ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl)
+                            .crossfade(true)
+                            .allowHardware(false) // ✅ --- CRASH FIX 2 ---
+                            .build(),
+                        contentDescription = "Project Media Image",
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF0F0F0)),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.sample_featured)
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+
+        // 2. PDF Document
+        if (project.pdfUrl.isNotBlank()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = { openUrl(project.pdfUrl) } // Open PDF in browser/viewer
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Icon(
+                        Icons.Default.PictureAsPdf,
+                        contentDescription = "PDF Icon",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "View Documentation (PDF)",
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        Icons.Default.OpenInBrowser,
+                        contentDescription = "Open Link",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // ---- Comments ----
+        Spacer(Modifier.height(20.dp))
+        CommentSection(
+            projectId = project.id,
+            comments = comments,
+            authViewModel = authViewModel,
+            currentUserPhotoUrl = currentUser?.profilePhotoUrl
+        )
+        Spacer(Modifier.height(32.dp))
     }
 }
 
+// Re-styled Link Chip as a full-width OutlinedButton
 @Composable
-fun ProjectLinkChip(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    AssistChip(
+private fun ProjectLinkButton(text: String, icon: ImageVector, onClick: () -> Unit) {
+    OutlinedButton(
         onClick = onClick,
-        label = { Text(text) },
-        leadingIcon = {
-            Icon(icon, null, Modifier.size(18.dp))
-        }
-    )
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Icon(icon, null, Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(text)
+    }
 }
 
+// Helper Composable for project tags
 @Composable
-fun ProjectTag(tag: String) {
+private fun ProjectTag(tag: String) {
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Text(
-            tag,
-            Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            text = tag,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSecondaryContainer
         )
     }
 }
 
+// Helper Composable for comment items
 @Composable
-fun CommentSection(
+private fun CommentSection(
     projectId: String,
     comments: List<Comment>,
     authViewModel: AuthViewModel,
@@ -298,7 +403,7 @@ fun CommentSection(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Sort comments by date, handling null dates safely
                 comments
-                    .sortedByDescending { it.createdAt ?: Date(0) }
+                    .sortedBy { it.createdAt ?: Date(0) } // Show oldest first
                     .forEach { comment ->
                         CommentItem(comment)
                     }
@@ -313,7 +418,7 @@ fun CommentSection(
 }
 
 @Composable
-fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUserPhotoUrl: String?) {
+private fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUserPhotoUrl: String?) {
     var commentText by remember { mutableStateOf("") }
     val isSendEnabled = commentText.isNotBlank()
 
@@ -323,19 +428,19 @@ fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUse
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // User profile photo
-        Image(
-            painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(LocalContext.current)
-                    .data(currentUserPhotoUrl)
-                    .crossfade(true)
-                    .build()
-            ),
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                .crossfade(true)
+                .allowHardware(false) // ✅ --- CRASH FIX 3 ---
+                .build(),
             contentDescription = "User Photo",
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(Color.LightGray),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.noprofile)
         )
 
         // Comment text field
@@ -373,7 +478,7 @@ fun CommentInputArea(projectId: String, authViewModel: AuthViewModel, currentUse
 }
 
 @Composable
-fun CommentItem(comment: Comment) {
+private fun CommentItem(comment: Comment) {
     val timeFormatter = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
 
     Row(
@@ -384,19 +489,19 @@ fun CommentItem(comment: Comment) {
         verticalAlignment = Alignment.Top
     ) {
         // User profile photo
-        Image(
-            painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(LocalContext.current)
-                    .data(comment.userPhotoUrl)
-                    .crossfade(true)
-                    .build()
-            ),
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(comment.userPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                .crossfade(true)
+                .allowHardware(false) // ✅ --- CRASH FIX 4 ---
+                .build(),
             contentDescription = "User Photo",
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(Color.LightGray),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.noprofile)
         )
 
         // Comment content

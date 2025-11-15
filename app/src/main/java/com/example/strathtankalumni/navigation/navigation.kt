@@ -1,3 +1,4 @@
+// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/navigation/navigation.kt
 package com.example.strathtankalumni.navigation
 
 import androidx.compose.foundation.layout.padding
@@ -39,6 +40,9 @@ sealed class Screen(val route: String) {
     object AlumniNotifications : Screen("alumni_notifications_screen")
     object AlumniList : Screen("alumni_list_screen")
 
+    // --- NEW: Collaboration Screen (for the tab) ---
+    object AlumniCollaborations : Screen("alumni_collaborations_screen")
+
     // Admin Screen
     object AdminHome : Screen("admin_home_screen")
 
@@ -65,12 +69,17 @@ sealed class Screen(val route: String) {
             return "other_profile/$userId"
         }
     }
+
+    // --- NEW: Collaboration Detail Route ---
+    object CollaborationDetail : Screen("collaboration_detail/{collaborationId}") {
+        fun createRoute(collaborationId: String) = "collaboration_detail/$collaborationId"
+    }
 }
 
 // ------------------ MAIN APP NAVIGATION ------------------ //
 @Composable
 fun AppNavHost(navController: NavHostController) {
-    // AuthViewModel is passed to Login/Register from here
+    // AuthViewModel is instantiated ONCE here
     val authViewModel: AuthViewModel = viewModel()
 
     NavHost(
@@ -81,11 +90,15 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.Welcome.route) { WelcomeScreen(navController) }
         composable(Screen.Login.route) { LoginScreen(navController, authViewModel) } // Pass VM
         composable(Screen.Register.route) { RegistrationScreen(navController, authViewModel) } // Pass VM
-        composable(Screen.ForgotPassword.route) { ForgotPasswordScreen(navController, authViewModel) } // <-- FIXED: Pass authViewModel
+
+        // ✅ **** THIS IS THE FIX ****
+        composable(Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(navController, authViewModel)
+        }
 
         // Alumni main graph
         composable(Screen.AlumniHome.route) {
-            AlumniGraph(mainNavController = navController, authViewModel = authViewModel) // <-- FIXED: Pass authViewModel
+            AlumniGraph(mainNavController = navController, authViewModel = authViewModel)
         }
 
         // Admin
@@ -122,13 +135,12 @@ fun AppNavHost(navController: NavHostController) {
 
 // ------------------ ALUMNI NAV GRAPH ------------------ //
 @Composable
-fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewModel) { // <-- FIXED: Accept authViewModel as parameter
+fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewModel) {
     val alumniNavController = rememberNavController()
     val currentBackStackEntry by alumniNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    // AuthViewModel is now passed as a parameter, so we remove the local instantiation:
-    // val authViewModel: AuthViewModel = viewModel()
+    // We use the authViewModel passed from AppNavHost
 
     AlumniNavLayout(
         mainNavController = mainNavController,
@@ -141,7 +153,10 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
             modifier = Modifier.padding(paddingValues) // Apply padding here
         ) {
             composable(Screen.AlumniHome.route) {
-                AlumniHomeScreen(alumniNavController, authViewModel) // <-- FIXED: Pass authViewModel to AlumniHomeScreen
+                AlumniHomeScreen(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel
+                )
             }
 
             composable(Screen.AlumniProjects.route) {
@@ -163,7 +178,7 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
             composable(Screen.AlumniProfile.route) {
                 AlumniProfileScreen(
                     mainNavController = mainNavController,
-                    alumniNavController = alumniNavController,
+                    alumniNavController = alumniNavController, // Pass nested controller
                     paddingValues = paddingValues,
                     authViewModel = authViewModel // Pass VM
                 )
@@ -171,7 +186,7 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
 
             composable(Screen.AlumniNotifications.route) {
                 AlumniNotificationsScreen(
-                    navController = alumniNavController,
+                    navController = alumniNavController, // Use nested controller
                     authViewModel = authViewModel // Pass VM
                 )
             }
@@ -222,6 +237,21 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
                     navController = alumniNavController,
                     authViewModel = authViewModel
                 )
+            }
+
+            // --- NEW: Collaboration Detail Screen ---
+            composable(
+                route = Screen.CollaborationDetail.route,
+                arguments = listOf(navArgument("collaborationId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val collaborationId = backStackEntry.arguments?.getString("collaborationId")
+                if (collaborationId != null) {
+                    CollaborationDetailScreen(
+                        navController = alumniNavController,
+                        collaborationId = collaborationId,
+                        authViewModel = authViewModel
+                    )
+                }
             }
         }
     }
