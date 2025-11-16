@@ -1,4 +1,3 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniAddProjectsPage.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.net.Uri
@@ -16,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ CHANGED
+import androidx.compose.material.icons.automirrored.filled.ArrowBack 
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,16 +31,16 @@ import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectState
-import androidx.compose.foundation.lazy.LazyRow // ✅ ADDED
-import androidx.compose.foundation.lazy.items // ✅ ADDED
-import androidx.compose.ui.platform.LocalFocusManager // ✅ ADDED
-import androidx.compose.ui.res.painterResource // ✅ ADDED
-import androidx.compose.foundation.text.KeyboardActions // ✅ ADDED
-import androidx.compose.foundation.text.KeyboardOptions // ✅ ADDED
-import androidx.compose.ui.text.input.ImeAction // ✅ ADDED
-import coil.request.ImageRequest // ✅ ADDED
-import com.example.strathtankalumni.R // ✅ ADDED
-import coil.size.Size // ✅ ADDED
+import androidx.compose.foundation.lazy.LazyRow 
+import androidx.compose.foundation.lazy.items 
+import androidx.compose.ui.platform.LocalFocusManager 
+import androidx.compose.ui.res.painterResource 
+import androidx.compose.foundation.text.KeyboardActions 
+import androidx.compose.foundation.text.KeyboardOptions 
+import androidx.compose.ui.text.input.ImeAction 
+import coil.request.ImageRequest 
+import com.example.strathtankalumni.R 
+import coil.size.Size 
 
 // List of available categories/tags
 private val allTags = listOf(

@@ -118,7 +118,7 @@ class AuthViewModel : ViewModel() {
 
     init {
         loadCurrentUser()
-        // ✅ ADDED: Start all listeners
+        //: Start all listeners
         loadConnections()
         loadCollaborations() // NEW
         fetchAllAlumni()

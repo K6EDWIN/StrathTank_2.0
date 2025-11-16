@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 // import androidx.compose.material.icons.filled.AccountCircle // No longer needed here
+import coil.size.Size
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -157,6 +158,8 @@ private fun MessageBubble(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
+                .size(Size(128, 128))
+                .allowHardware(false)
                 .build(),
             contentDescription = "Profile photo",
             modifier = Modifier
@@ -217,6 +220,8 @@ private fun MessageInput(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
+                .size(Size(128, 128)) // <-- ADD THIS
+                .allowHardware(false)
                 .build(),
             contentDescription = "Your profile picture",
             modifier = Modifier

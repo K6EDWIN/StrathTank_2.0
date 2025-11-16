@@ -321,7 +321,7 @@ fun AlumniProjectDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) // ✅ Added
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) 
             )
         }
     ) { paddingValues ->

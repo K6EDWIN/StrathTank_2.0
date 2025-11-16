@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-// ⬇️ 1. ADD THIS IMPORT
+import coil.size.Size
 import androidx.compose.material3.Badge
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +34,7 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.MessagesViewModel
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class) // Added for Badge
 @Composable
@@ -160,6 +161,8 @@ private fun ConversationRow(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
+                .size(Size(128, 128))
+                .allowHardware(false)
                 .build(),
             contentDescription = "$name's profile picture",
             modifier = Modifier

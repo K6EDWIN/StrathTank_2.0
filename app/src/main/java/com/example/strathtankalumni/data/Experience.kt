@@ -1,6 +1,7 @@
 package com.example.strathtankalumni.data
 
 import java.util.UUID
+import com.google.firebase.firestore.PropertyName
 
 data class ExperienceItem(
     val id: String = UUID.randomUUID().toString(), // Auto-generate a unique ID
@@ -8,6 +9,7 @@ data class ExperienceItem(
     val role: String = "",
     val startDate: String = "", // e.g., "Jan 2020"
     val endDate: String = "",   // e.g., "Dec 2022" or "Present"
+    @get:PropertyName("current")
     val isCurrent: Boolean = false
 ) {
     // Add a no-argument constructor for Firebase

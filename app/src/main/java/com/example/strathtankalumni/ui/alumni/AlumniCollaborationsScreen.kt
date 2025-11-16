@@ -138,7 +138,7 @@ private fun CollaborationCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(collaboration.projectImageUrl.ifEmpty { R.drawable.sample_featured })
                     .crossfade(true)
-                    .size(Size(1024, 1024)) // ✅ --- CRASH FIX ---
+                    .size(Size(1024, 1024))
                     .allowHardware(false)
                     .build(),
                 contentDescription = collaboration.projectTitle,
