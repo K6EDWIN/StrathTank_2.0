@@ -1,10 +1,8 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/navigation/navigation.kt
 package com.example.strathtankalumni.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -40,7 +38,6 @@ sealed class Screen(val route: String) {
     object AlumniNotifications : Screen("alumni_notifications_screen")
     object AlumniList : Screen("alumni_list_screen")
 
-    // --- NEW: Collaboration Screen (for the tab) ---
     object AlumniCollaborations : Screen("alumni_collaborations_screen")
 
     // Admin Screen
@@ -52,10 +49,10 @@ sealed class Screen(val route: String) {
     object AlumniProjectDetail : Screen("alumni_project_detail/{projectId}") {
         fun createRoute(projectId: String) = "alumni_project_detail/$projectId"
     }
-    // --- END NEW Project Routes ---
 
 
-    // --- YOUR Direct Message route ---
+
+    // --- My Direct Message route ---
     object DirectMessage : Screen("direct_message/{userName}/{otherUserId}") {
         fun createRoute(userName: String, otherUserId: String): String {
             val encodedUserName = URLEncoder.encode(userName, StandardCharsets.UTF_8.toString())
@@ -63,14 +60,14 @@ sealed class Screen(val route: String) {
         }
     }
 
-    // --- YOUR Other Profile route ---
+    // --- Other Profile route ---
     object OtherProfile : Screen("other_profile/{userId}") {
         fun createRoute(userId: String): String {
             return "other_profile/$userId"
         }
     }
 
-    // --- NEW: Collaboration Detail Route ---
+    // --- Collaboration Detail Route ---
     object CollaborationDetail : Screen("collaboration_detail/{collaborationId}") {
         fun createRoute(collaborationId: String) = "collaboration_detail/$collaborationId"
     }
@@ -155,6 +152,7 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
             composable(Screen.AlumniHome.route) {
                 AlumniHomeScreen(
                     navController = alumniNavController,
+                    paddingValues = paddingValues,
                     authViewModel = authViewModel
                 )
             }

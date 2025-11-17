@@ -15,7 +15,7 @@ enum class ConnectionStatus {
 // Represents the document in your Firebase 'connections' collection
 data class Connection(
     @DocumentId
-    val id: String = "", // The document ID (e.g., userId1_userId2)
+    val id: String = "",
     val participantIds: List<String> = emptyList(),
     val senderId: String = "", // The ID of the user who sent the request
     val status: String = "pending", // "pending", "accepted", "declined"

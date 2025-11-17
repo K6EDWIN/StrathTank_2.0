@@ -1,6 +1,7 @@
 package com.example.strathtankalumni.data
 
 import com.google.firebase.firestore.Exclude
+import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
@@ -27,22 +28,20 @@ data class Project(
     val githubUrl: String = "",
     val projectType: String = "",
     val imageUrl: String = "",
-    val liked: Boolean = false,
-    // NEW FIELDS for Media
-    val mediaImageUrls: List<String> = emptyList(), // Multiple gallery images
-    val pdfUrl: String = "", // Documentation PDF
-    // END NEW FIELDS for Media
+    val mediaImageUrls: List<String> = emptyList(),
+    val pdfUrl: String = "",
     val categories: List<String> = emptyList(),
-    // NEW FIELDS for Tech Stack
     val programmingLanguages: List<String> = emptyList(),
     val databaseUsed: List<String> = emptyList(),
     val techStack: List<String> = emptyList(),
-    // END NEW FIELDS
     @ServerTimestamp
     val createdAt: Date? = null,
-    // UI display fields (counts)
     val likes: Int = 0,
-    val commentCount: Int = 0, // Used to update the main project list/detail
-    // Add isLiked state for UI tracking (client-side)
+    val commentCount: Int = 0,
+
+
+    val isFeatured: Boolean = false,
+
+    @get:PropertyName("liked")
     val isLiked: Boolean = false
 )
