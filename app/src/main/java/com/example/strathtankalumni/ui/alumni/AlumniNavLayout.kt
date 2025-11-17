@@ -42,7 +42,6 @@ fun AlumniNavLayout(
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
         Screen.AlumniProjects.route -> "Projects"
-        // ❌ --- REMOVED "Collabs" TITLE FROM HERE ---
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
         Screen.AlumniList.route -> ""

@@ -55,7 +55,7 @@ import coil.size.Size // ✅ IMPORT
 fun AlumniProfileScreen(
     mainNavController: NavHostController,
     alumniNavController: NavHostController,
-    paddingValues: PaddingValues,
+    paddingValues: PaddingValues, // This comes from the Scaffold
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -110,316 +110,342 @@ fun AlumniProfileScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .verticalScroll(rememberScrollState()),
-    ) {
-
-        // --- 1. Centered Header Section ---
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
+    // --- EDIT: Added Box wrapper for loading spinner ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (currentUser == null) {
+            // --- Show a centered spinner while loading ---
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            // --- Once loaded, show profile content ---
+            Column(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF1F3F4))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                        onClick = { launcher.launch("image/*") }
-                    ),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    // --- MODIFICATION 1: Apply ONLY bottom padding from Scaffold ---
+                    // This removes the unwanted top padding under the app bar.
+                    .padding(bottom = paddingValues.calculateBottomPadding())
+                // --- MODIFICATION 2: Removed .padding(horizontal = 16.dp) from here ---
             ) {
-                if (!currentUser?.profilePhotoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(currentUser?.profilePhotoUrl)
-                            .crossfade(true)
-                            .size(Size(256, 256)) // ✅ --- CRASH FIX ---
-                            .allowHardware(false)
-                            .build(),
-                        contentDescription = "Profile photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(id = R.drawable.noprofile)
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.noprofile),
-                        contentDescription = "Default profile",
-                        modifier = Modifier.size(120.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                // --- EDIT: Added new scrollable Column with .weight(1f) ---
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        // --- MODIFICATION 3: Added consolidated horizontal padding here ---
+                        // This will apply to ALL scrollable content.
+                        .padding(horizontal = 16.dp)
+                ) {
 
-            Text(
-                text = "${currentUser?.firstName ?: ""} ${currentUser?.lastName ?: ""}".trim()
-                    .ifBlank { "Loading..." },
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
-            Text(
-                text = currentUser?.email ?: "Loading...",
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (isEditing) {
-                        authViewModel.updateUserProfile(
-                            about = about,
-                            experience = experienceList,
-                            skills = skills,
-                            linkedinUrl = linkedinUrl
-                        ) { success ->
-                            Toast.makeText(
-                                context,
-                                if (success) "Profile updated successfully" else "Failed to update profile",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                    isEditing = !isEditing
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(if (isEditing) "Save Changes" else "Edit Profile")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- 2. Left-Aligned Content Section ---
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            if (!isEditing) {
-                // --- View Mode ---
-                ProfileSection("About", about)
-
-                Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                if (experienceList.isEmpty()) {
-                    Text("No experience added", color = Color.Gray, fontSize = 14.sp)
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        experienceList.forEach { item ->
-                            ExperienceItemView(item = item)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Skills", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                if (skills.isEmpty()) {
-                    Text("No skills yet", color = Color.Gray, fontSize = 14.sp)
-                } else {
-                    ViewOnlyFlowRow(items = skills)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Contact", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                ContactRow(Icons.Default.Email, currentUser?.email ?: "Not available")
-
-                if (!editingLinkedIn) {
-                    if (linkedinUrl.isNotBlank()) {
-                        Row(
+                    // --- 1. Centered Header Section ---
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        // --- MODIFICATION 4: Removed .padding(horizontal = 16.dp) ---
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp)
-                                .background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF1F3F4))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = LocalIndication.current,
+                                    onClick = { launcher.launch("image/*") }
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.Link,
-                                contentDescription = null,
-                                tint = Color(0xFF0A66C2)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = linkedinUrl,
-                                color = Color(0xFF0A66C2),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = LocalIndication.current,
-                                        onClick = {
-                                            val intent =
-                                                Intent(Intent.ACTION_VIEW, Uri.parse(linkedinUrl))
-                                            context.startActivity(intent)
-                                        }
-                                    )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(onClick = { editingLinkedIn = true }) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit LinkedIn",
-                                    tint = Color.Gray
+                            if (!currentUser?.profilePhotoUrl.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(currentUser?.profilePhotoUrl)
+                                        .crossfade(true)
+                                        .size(Size(256, 256)) // ✅ --- CRASH FIX ---
+                                        .allowHardware(false)
+                                        .build(),
+                                    contentDescription = "Profile photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                    error = painterResource(id = R.drawable.noprofile)
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.noprofile),
+                                    contentDescription = "Default profile",
+                                    modifier = Modifier.size(120.dp),
+                                    contentScale = ContentScale.Crop
                                 )
                             }
                         }
-                    } else {
-                        ContactRow(Icons.Default.Link, "Add LinkedIn URL") {
-                            editingLinkedIn = true
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "${currentUser?.firstName ?: ""} ${currentUser?.lastName ?: ""}".trim()
+                                .ifBlank { "Loading..." },
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                        Text(
+                            text = currentUser?.email ?: "Loading...",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                if (isEditing) {
+                                    authViewModel.updateUserProfile(
+                                        about = about,
+                                        experience = experienceList,
+                                        skills = skills,
+                                        linkedinUrl = linkedinUrl
+                                    ) { success ->
+                                        Toast.makeText(
+                                            context,
+                                            if (success) "Profile updated successfully" else "Failed to update profile",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                isEditing = !isEditing
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(if (isEditing) "Save Changes" else "Edit Profile")
                         }
                     }
-                } else {
-                    OutlinedTextField(
-                        value = linkedinUrl,
-                        onValueChange = { linkedinUrl = it },
-                        label = { Text("LinkedIn URL") },
-                        placeholder = { Text("https://linkedin.com/in/yourname") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            authViewModel.updateUserProfile(
-                                about = about,
-                                experience = experienceList,
-                                skills = skills,
-                                linkedinUrl = linkedinUrl
-                            ) { success ->
-                                Toast.makeText(
-                                    context,
-                                    if (success) "LinkedIn updated successfully" else "Failed to update LinkedIn",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                if (success) editingLinkedIn = false
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // --- 2. Left-Aligned Content Section ---
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                        // --- MODIFICATION 4: Removed .padding(horizontal = 16.dp) ---
+                    ) {
+                        if (!isEditing) {
+                            // --- View Mode ---
+                            ProfileSection("About", about)
+
+                            Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (experienceList.isEmpty()) {
+                                Text("No experience added", color = Color.Gray, fontSize = 14.sp)
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    experienceList.forEach { item ->
+                                        ExperienceItemView(item = item)
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Skills", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (skills.isEmpty()) {
+                                Text("No skills yet", color = Color.Gray, fontSize = 14.sp)
+                            } else {
+                                ViewOnlyFlowRow(items = skills)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Contact", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ContactRow(Icons.Default.Email, currentUser?.email ?: "Not available")
+
+                            if (!editingLinkedIn) {
+                                if (linkedinUrl.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 6.dp)
+                                            .background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Link,
+                                            contentDescription = null,
+                                            tint = Color(0xFF0A66C2)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = linkedinUrl,
+                                            color = Color(0xFF0A66C2),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = LocalIndication.current,
+                                                    onClick = {
+                                                        val intent =
+                                                            Intent(Intent.ACTION_VIEW, Uri.parse(linkedinUrl))
+                                                        context.startActivity(intent)
+                                                    }
+                                                )
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        IconButton(onClick = { editingLinkedIn = true }) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit LinkedIn",
+                                                tint = Color.Gray
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    ContactRow(Icons.Default.Link, "Add LinkedIn URL") {
+                                        editingLinkedIn = true
+                                    }
+                                }
+                            } else {
+                                OutlinedTextField(
+                                    value = linkedinUrl,
+                                    onValueChange = { linkedinUrl = it },
+                                    label = { Text("LinkedIn URL") },
+                                    placeholder = { Text("https://linkedin.com/in/yourname") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = {
+                                        authViewModel.updateUserProfile(
+                                            about = about,
+                                            experience = experienceList,
+                                            skills = skills,
+                                            linkedinUrl = linkedinUrl
+                                        ) { success ->
+                                            Toast.makeText(
+                                                context,
+                                                if (success) "LinkedIn updated successfully" else "Failed to update LinkedIn",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            if (success) editingLinkedIn = false
+                                        }
+                                    }
+                                ) {
+                                    Text("Save LinkedIn")
+                                }
+                            }
+
+                        } else {
+                            // --- Editable Mode ---
+                            EditableSection("About", about) { about = it }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                IconButton(onClick = { showExperienceDialog = true }) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add Experience")
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (experienceList.isEmpty()) {
+                                Text("No experience added", color = Color.Gray, fontSize = 14.sp)
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    experienceList.forEach { item ->
+                                        ExperienceItemEditView(
+                                            item = item,
+                                            onRemove = {
+                                                experienceList = experienceList - item
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Skills & Interests", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = newSkill,
+                                    onValueChange = { newSkill = it },
+                                    modifier = Modifier.weight(1f),
+                                    placeholder = { Text("Type a skill") }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(onClick = {
+                                    if (newSkill.isNotBlank()) {
+                                        skills = skills + newSkill.trim()
+                                        newSkill = ""
+                                    }
+                                }) { Text("Add") }
+                            }
+
+                            if (skills.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                FlowRowLayout(items = skills, onRemove = { skills = skills - it })
                             }
                         }
-                    ) {
-                        Text("Save LinkedIn")
-                    }
-                }
 
-            } else {
-                // --- Editable Mode ---
-                EditableSection("About", about) { about = it }
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    IconButton(onClick = { showExperienceDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Experience")
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                if (experienceList.isEmpty()) {
-                    Text("No experience added", color = Color.Gray, fontSize = 14.sp)
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        experienceList.forEach { item ->
-                            ExperienceItemEditView(
-                                item = item,
-                                onRemove = {
-                                    experienceList = experienceList - item
-                                }
-                            )
+                        var tabIndex by remember { mutableStateOf(0) }
+                        val tabs = listOf("Projects", "Collaborations")
+
+                        PrimaryTabRow(selectedTabIndex = tabIndex) {
+                            tabs.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = tabIndex == index,
+                                    onClick = { tabIndex = index },
+                                    text = { Text(text = title) }
+                                )
+                            }
                         }
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Skills & Interests", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newSkill,
-                        onValueChange = { newSkill = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Type a skill") }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        if (newSkill.isNotBlank()) {
-                            skills = skills + newSkill.trim()
-                            newSkill = ""
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp)
+                                .heightIn(min = 200.dp), // Added height
+                            contentAlignment = Alignment.TopCenter // Changed
+                        ) {
+                            when (tabIndex) {
+                                0 -> Text("No projects yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                                1 -> AlumniCollaborationsScreen(
+                                    navController = alumniNavController,
+                                    authViewModel = authViewModel
+                                )
+                            }
                         }
-                    }) { Text("Add") }
-                }
 
-                if (skills.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRowLayout(items = skills, onRemove = { skills = skills - it })
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            var tabIndex by remember { mutableStateOf(0) }
-            val tabs = listOf("Projects", "Collaborations")
-
-            PrimaryTabRow(selectedTabIndex = tabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = tabIndex == index,
-                        onClick = { tabIndex = index },
-                        text = { Text(text = title) }
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp)
-                    .heightIn(min=200.dp), // Added height
-                contentAlignment = Alignment.TopCenter // Changed
-            ) {
-                when (tabIndex) {
-                    0 -> Text("No projects yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-                    1 -> AlumniCollaborationsScreen(
-                        navController = alumniNavController,
-                        authViewModel = authViewModel
-                    )
-                }
-            }
-
-            Button(
-                onClick = {
-                    authViewModel.signOut()
-                    mainNavController.navigate(Screen.Welcome.route) {
-                        popUpTo(Screen.AlumniHome.route) { inclusive = true }
-                        launchSingleTop = true
+                        // --- EDIT: Moved Logout Button out of this Column ---
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text("Logout", color = Color.White)
-            }
-        }
-    }
+                } // --- EDIT: Closing brace for new .weight(1f) Column
+
+                // --- EDIT: Moved Logout Button here, to be pinned ---
+                Button(
+                    onClick = {
+                        authViewModel.signOut()
+                        mainNavController.navigate(Screen.Welcome.route) {
+                            popUpTo(Screen.AlumniHome.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // --- MODIFICATION 5: Added horizontal padding to align with content ---
+                        .padding(horizontal = 16.dp) ,// Keep the top padding
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Logout", color = Color.White)
+                }
+            } // --- EDIT: Closing brace for Root Column
+        } // --- EDIT: Closing brace for "else"
+    } // --- EDIT: Closing brace for "Box"
 }
 
 // (ContactRow is unchanged)
@@ -524,7 +550,7 @@ fun FlowRowLayout(
     }
 }
 
-// ✅ 2. ADD 'private' TO FIX THE CONFLICT
+// (ViewOnlyFlowRow is unchanged)
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ViewOnlyFlowRow(items: List<String>) {
@@ -622,7 +648,8 @@ fun ExperienceEntryDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp) // Changed from vertical
+                    .padding(vertical = 24.dp), // Added vertical padding
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

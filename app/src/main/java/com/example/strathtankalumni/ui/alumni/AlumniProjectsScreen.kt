@@ -1,9 +1,6 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniProjectsScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
-// ❌ REMOVE THIS: import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-// ❌ REMOVE THIS: import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,7 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ CHANGED
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -43,10 +40,9 @@ import com.example.strathtankalumni.viewmodel.ProjectsListState
 import com.example.strathtankalumni.viewmodel.ProjectDetailState
 import java.util.Calendar
 import java.util.Date
-// ✅ 1. ADD THESE IMPORTS
 import coil.compose.AsyncImage
 import androidx.compose.ui.res.painterResource
-import coil.size.Size // ✅ 2. IMPORT COIL SIZE
+import coil.size.Size
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,77 +84,92 @@ fun AlumniProjectsScreen(
         }
     ) { innerPadding ->
 
-        Column(
-            modifier = Modifier
-                .padding(innerPadding) // Use padding from Scaffold
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Search Projects") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            // Segmented Tabs for Filtering
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp) // Adjusted spacing
-            ) {
-                tabTitles.forEachIndexed { index, title ->
-                    OutlinedButton(
-                        onClick = { selectedTabIndex = index },
-                        modifier = Modifier.weight(1f),
-                        shape = when (index) {
-                            0 -> RoundedCornerShape(topStart = 50.dp, bottomStart = 50.dp, topEnd = 0.dp, bottomEnd = 0.dp)
-                            tabTitles.lastIndex -> RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 50.dp, bottomEnd = 50.dp)
-                            else -> RoundedCornerShape(0.dp)
-                        },
-                        colors = if (index == selectedTabIndex) {
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            ButtonDefaults.outlinedButtonColors()
-                        },
-                        // Only add border to unselected buttons for a continuous look
-                        border = if (index != selectedTabIndex) ButtonDefaults.outlinedButtonBorder else null,
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
-                    ) {
-                        Text(title)
-                    }
+        // --- EDIT: Moved 'when' block to be the top-level content ---
+        // Dynamic content based on ProjectsListState
+        when (projectsState) {
+            is ProjectsListState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // --- EDIT: Added padding from Scaffold ---
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
-
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Dynamic content based on ProjectsListState
-            when (projectsState) {
-                is ProjectsListState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                is ProjectsListState.Error -> {
+            is ProjectsListState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // --- EDIT: Added padding from Scaffold ---
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
                         text = "Error: ${(projectsState as ProjectsListState.Error).message}",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
-                is ProjectsListState.Success -> {
+            }
+            is ProjectsListState.Success -> {
+                // --- EDIT: Moved all UI content inside the Success state ---
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding) // Use padding from Scaffold
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    // Search Bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Search Projects") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // --- EDIT: Changed vertical: 8.dp to bottom: 8.dp ---
+                            .padding(bottom = 8.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    // Segmented Tabs for Filtering
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp) // Adjusted spacing
+                    ) {
+                        tabTitles.forEachIndexed { index, title ->
+                            OutlinedButton(
+                                onClick = { selectedTabIndex = index },
+                                modifier = Modifier.weight(1f),
+                                shape = when (index) {
+                                    0 -> RoundedCornerShape(topStart = 50.dp, bottomStart = 50.dp, topEnd = 0.dp, bottomEnd = 0.dp)
+                                    tabTitles.lastIndex -> RoundedCornerShape(topStart = 0.dp, bottomStart = 0.dp, topEnd = 50.dp, bottomEnd = 50.dp)
+                                    else -> RoundedCornerShape(0.dp)
+                                },
+                                colors = if (index == selectedTabIndex) {
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    ButtonDefaults.outlinedButtonColors()
+                                },
+                                // Only add border to unselected buttons for a continuous look
+                                border = if (index != selectedTabIndex) ButtonDefaults.outlinedButtonBorder else null,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
+                            ) {
+                                Text(title)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     val allProjects = (projectsState as ProjectsListState.Success).projects
                     val currentUserId = currentUser?.userId
 
@@ -225,7 +236,7 @@ fun AlumniProjectsScreen(
     }
 }
 
-// Helper function to check if a project's creation date is today
+// (Helper function is unchanged)
 private fun isProjectToday(project: Project): Boolean {
     val projectDate: Date? = project.createdAt
     if (projectDate == null) return false
@@ -237,7 +248,7 @@ private fun isProjectToday(project: Project): Boolean {
             projectCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)
 }
 
-// Updated ProjectCard composable to use Project data class and be clickable
+// (ProjectCard is unchanged)
 @Composable
 fun ProjectCard(project: Project, onClick: () -> Unit) {
     // Add clickable modifier to the outer Row
@@ -292,10 +303,7 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
     Divider(modifier = Modifier.padding(top = 8.dp)) // Add a divider for better separation
 }
 
-// =====================================================================
-// PROJECT DETAIL SCREEN IMPLEMENTATION (Data Loader & State Manager)
-// =====================================================================
-
+// (AlumniProjectDetailScreen is unchanged)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectDetailScreen(
@@ -321,7 +329,7 @@ fun AlumniProjectDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) 
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->
