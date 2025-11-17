@@ -268,8 +268,8 @@ fun AlumniAddProjectsPage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageUri)
                             .crossfade(true)
-                            .size(Size(1024, 1024)) // <-- FIX
-                            .allowHardware(false) // <-- FIX
+                            .size(Size(1024, 1024)) 
+                            .allowHardware(false) //
                             .build(),
                         contentDescription = "Project Cover Image",
                         modifier = Modifier.fillMaxSize(),
