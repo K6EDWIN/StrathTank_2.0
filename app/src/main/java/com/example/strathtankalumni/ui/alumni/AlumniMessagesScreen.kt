@@ -5,13 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items // Import items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import coil.size.Size
-import androidx.compose.material3.Badge
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,8 +34,7 @@ import com.example.strathtankalumni.data.MessagesViewModel
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 
-
-@OptIn(ExperimentalMaterial3Api::class) // Added for Badge
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniMessagesScreen(
     navController: NavHostController,
@@ -44,38 +42,34 @@ fun AlumniMessagesScreen(
     viewModel: MessagesViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel()
 ) {
-    // ✅ 3. GET DYNAMIC USER
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
 
-    // ✅ 4. GET CONNECTIONS
     val connections by authViewModel.connections.collectAsState()
 
-    // ✅ 5. FILTER FOR ACCEPTED CONNECTIONS
     val acceptedConnections = remember(connections) {
         connections.filter { it.status == "accepted" }
     }
 
-    // --- Load conversations based on accepted connections ---
-    // ✅ 6. THIS IS THE FIX
-    // This block replaces your old LaunchedEffect
+    // load conversations based on accepted connections
     LaunchedEffect(key1 = currentUserId, key2 = acceptedConnections) {
         if (currentUserId != null) {
-            // Call the new function with two arguments
             viewModel.loadConversations(currentUserId, acceptedConnections)
         }
     }
 
     val conversations by viewModel.conversations.collectAsState()
-    
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            // Apply only bottom and horizontal padding
-            .padding(paddingValues)
+            // FIXED: Remove huge top padding, keep only bottom inset padding
+            .padding(bottom = paddingValues.calculateBottomPadding())
             .padding(horizontal = 16.dp)
     ) {
+        // Search bar at top with normal spacing
+        Spacer(modifier = Modifier.height(16.dp))
+
         OutlinedTextField(
             value = "",
             onValueChange = {},
@@ -84,7 +78,8 @@ fun AlumniMessagesScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(32.dp)
         )
-        // No Spacer here - this removes the gap
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (conversations.isEmpty()) {
             Box(
@@ -94,7 +89,6 @@ fun AlumniMessagesScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    // ✅ 7. UPDATED EMPTY TEXT
                     text = if (acceptedConnections.isEmpty())
                         "You haven't made any connections yet.\nFind alumni to connect with."
                     else
@@ -110,16 +104,13 @@ fun AlumniMessagesScreen(
                     val otherUser = convoWithUser.user
                     val conversation = convoWithUser.conversation
 
-                    // ⬇️ 2. PASS THE UNREAD COUNT
                     ConversationRow(
                         name = "${otherUser.firstName} ${otherUser.lastName}",
                         lastMessage = conversation.lastMessage,
-                        timestamp = "now", // TODO: Format this
+                        timestamp = "now",
                         photoUrl = otherUser.profilePhotoUrl,
-                        // This comes from the ConversationWithUser class
                         unreadCount = convoWithUser.unreadCount,
                         onClick = {
-                            // The DirectMessageScreen will call markAsRead
                             navController.navigate(
                                 Screen.DirectMessage.createRoute(
                                     userName = "${otherUser.firstName} ${otherUser.lastName}",
@@ -134,18 +125,18 @@ fun AlumniMessagesScreen(
     }
 }
 
-// ⬇️ 3. REPLACED ConversationRow
-@OptIn(ExperimentalMaterial3Api::class) // Added for Badge
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationRow(
     name: String,
     lastMessage: String,
     timestamp: String,
     photoUrl: String?,
-    unreadCount: Int, // <-- ADDED
+    unreadCount: Int,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,10 +179,9 @@ private fun ConversationRow(
 
         Spacer(Modifier.width(8.dp))
 
-        // --- MODIFICATION: Replaced Text with a Column ---
         Column(
             horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp) // Space between time and badge
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = timestamp,
@@ -199,7 +189,6 @@ private fun ConversationRow(
                 color = Color.Gray
             )
 
-            // Conditionally show the unread badge
             if (unreadCount > 0) {
                 Badge(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -207,12 +196,11 @@ private fun ConversationRow(
                 ) {
                     Text(
                         text = "$unreadCount",
-                        modifier = Modifier.padding(horizontal = 4.dp), // Add padding for 2-digit numbers
+                        modifier = Modifier.padding(horizontal = 4.dp),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
             }
         }
-        // --- END OF MODIFICATION ---
     }
 }

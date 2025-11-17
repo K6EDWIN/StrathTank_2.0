@@ -99,13 +99,9 @@ fun DirectMessageScreen(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 16.dp),
-            reverseLayout = true,
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item { Spacer(Modifier.height(8.dp)) }
-
-            items(messages.reversed()) { message ->
-                // 3. Pass BOTH URLs to MessageBubble
+            items(messages) { message ->
                 MessageBubble(
                     text = message.text,
                     isFromUser = message.senderId == currentUserId,
@@ -114,6 +110,7 @@ fun DirectMessageScreen(
                 )
             }
         }
+
 
         // 4. Pass CURRENT user's URL to MessageInput
         MessageInput(
