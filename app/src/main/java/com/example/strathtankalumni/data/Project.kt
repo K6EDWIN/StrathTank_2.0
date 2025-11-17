@@ -27,6 +27,7 @@ data class Project(
     val githubUrl: String = "",
     val projectType: String = "",
     val imageUrl: String = "",
+    val liked: Boolean = false,
     // NEW FIELDS for Media
     val mediaImageUrls: List<String> = emptyList(), // Multiple gallery images
     val pdfUrl: String = "", // Documentation PDF

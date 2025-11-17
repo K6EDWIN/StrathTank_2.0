@@ -106,7 +106,7 @@ fun AlumniItem(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(user.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
                 .crossfade(true)
-                .size(Size(128, 128)) // ✅ --- CRASH FIX ---
+                .size(Size(128, 128)) //
                 .allowHardware(false)
                 .build(),
             contentDescription = "Profile Photo",
