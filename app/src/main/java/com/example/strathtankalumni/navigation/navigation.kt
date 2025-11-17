@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.strathtankalumni.ui.admin.AdminDashboardScreen
+import com.example.strathtankalumni.ui.admin.AdminGraph
 import com.example.strathtankalumni.ui.alumni.*
 import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
 import com.example.strathtankalumni.ui.auth.LoginScreen
@@ -40,8 +40,12 @@ sealed class Screen(val route: String) {
 
     object AlumniCollaborations : Screen("alumni_collaborations_screen")
 
-    // Admin Screen
-    object AdminHome : Screen("admin_home_screen")
+    // Admin Screens
+    object AdminHome : Screen("admin_dashboard_screen")
+    object AdminUsers : Screen("admin_users_screen")
+    object AdminProjects : Screen("admin_projects_screen")
+    object AdminRequests : Screen("admin_requests_screen")
+    object AdminReports : Screen("admin_reports_screen")
 
     // --- NEW Project Routes from Ian's Branch ---
     object AlumniAddProjects : Screen("alumni_add_projects_screen")
@@ -98,9 +102,9 @@ fun AppNavHost(navController: NavHostController) {
             AlumniGraph(mainNavController = navController, authViewModel = authViewModel)
         }
 
-        // Admin
+        // Admin main graph
         composable(Screen.AdminHome.route) {
-            AdminDashboardScreen(navController = navController)
+            AdminGraph(mainNavController = navController)
         }
 
         // Direct Message Screen (at the main nav level)
