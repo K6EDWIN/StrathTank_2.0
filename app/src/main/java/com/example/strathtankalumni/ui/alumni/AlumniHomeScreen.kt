@@ -69,25 +69,7 @@ fun AlumniHomeScreen(
     }
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Home", fontWeight = FontWeight.Bold) },
-                actions = {
-                    // ✅ HERE IS YOUR NEW ICON
-                    IconButton(onClick = {
-                        navController.navigate(Screen.AlumniCollaborations.route)
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Groups,
-                            contentDescription = "My Collaborations"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
+        // ✅ --- TOP BAR REMOVED ---
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
