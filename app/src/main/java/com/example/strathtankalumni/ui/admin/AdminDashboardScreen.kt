@@ -19,18 +19,25 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.strathtankalumni.navigation.Screen
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 
 @Composable
 fun AdminDashboardScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    adminViewModel: AdminViewModel
 ) {
+    val stats by adminViewModel.dashboardStats.collectAsState()
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -52,16 +59,16 @@ fun AdminDashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard(title = "Total Users", value = "1,250")
-                StatCard(title = "Active Projects", value = "35")
+                StatCard(title = "Total Users", value = stats.totalUsers.toString())
+                StatCard(title = "Active Projects", value = stats.activeProjects.toString())
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard(title = "Pending Verifications", value = "12")
-                StatCard(title = "Reports", value = "5")
+                StatCard(title = "Pending Verifications", value = stats.pendingVerifications.toString())
+                StatCard(title = "Reports", value = stats.openReports.toString())
             }
         }
 
@@ -142,7 +149,9 @@ fun AdminDashboardScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    onClick = { /* TODO: Navigate to verification queue */ },
+                    onClick = {
+                        navController.navigate(Screen.AdminUsers.route)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF2563EB),
@@ -153,7 +162,9 @@ fun AdminDashboardScreen(
                     Text("Verify Users")
                 }
                 Button(
-                    onClick = { /* TODO: Navigate to project approvals */ },
+                    onClick = {
+                        navController.navigate(Screen.AdminProjects.route)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF111827),
@@ -164,7 +175,9 @@ fun AdminDashboardScreen(
                     Text("Approve Projects")
                 }
                 Button(
-                    onClick = { /* TODO: Navigate to reports */ },
+                    onClick = {
+                        navController.navigate(Screen.AdminReports.route)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF111827),

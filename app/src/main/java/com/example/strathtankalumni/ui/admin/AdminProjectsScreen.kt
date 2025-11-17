@@ -21,6 +21,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,23 +31,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.R
-
-data class AdminProject(
-    val title: String,
-    val category: String,
-    val imageRes: Int
-)
+import com.example.strathtankalumni.data.Project
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 
 @Composable
 fun AdminProjectsScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    adminViewModel: AdminViewModel
 ) {
-    val projects = listOf(
-        AdminProject("Eco-Friendly Packaging Solutions", "Non-IT", R.drawable.sample_eco),
-        AdminProject("AI-Powered Tutoring Platform", "IT", R.drawable.sample_featured),
-        AdminProject("Sustainable Agriculture Tech", "IT", R.drawable.sample_farm)
-    )
+    val projects by adminViewModel.projects.collectAsState()
 
     Column(
         modifier = Modifier
@@ -54,18 +49,24 @@ fun AdminProjectsScreen(
             .padding(paddingValues)
             .padding(16.dp)
     ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(projects) { project ->
-                AdminProjectCard(project = project)
+                AdminProjectCard(
+                    project = project,
+                    onApprove = { adminViewModel.updateProjectStatus(project.id, "approved") },
+                    onReject = { adminViewModel.updateProjectStatus(project.id, "rejected") }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AdminProjectCard(project: AdminProject) {
+private fun AdminProjectCard(
+    project: Project,
+    onApprove: () -> Unit,
+    onReject: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF030712)),
@@ -78,11 +79,13 @@ private fun AdminProjectCard(project: AdminProject) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = project.imageRes),
-                    contentDescription = null,
-                    modifier = Modifier.height(60.dp)
-                )
+                if (project.imageUrl.isNotBlank()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.sample_featured),
+                        contentDescription = null,
+                        modifier = Modifier.height(60.dp)
+                    )
+                }
                 Column(modifier = Modifier.padding(start = 12.dp)) {
                     Text(
                         text = project.title,
@@ -92,7 +95,7 @@ private fun AdminProjectCard(project: AdminProject) {
                         )
                     )
                     Text(
-                        text = "Category: ${project.category}",
+                        text = project.categories.firstOrNull() ?: "",
                         style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF9CA3AF))
                     )
                 }
@@ -113,7 +116,7 @@ private fun AdminProjectCard(project: AdminProject) {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        onClick = { /* TODO: reject */ },
+                    onClick = onReject,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF111827),
                             contentColor = Color(0xFFE5E7EB)
@@ -123,7 +126,7 @@ private fun AdminProjectCard(project: AdminProject) {
                         Text("Reject")
                     }
                     Button(
-                        onClick = { /* TODO: approve */ },
+                    onClick = onApprove,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF2563EB),
                             contentColor = Color.White

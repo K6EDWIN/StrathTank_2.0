@@ -19,6 +19,7 @@ import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -80,8 +81,9 @@ sealed class Screen(val route: String) {
 // ------------------ MAIN APP NAVIGATION ------------------ //
 @Composable
 fun AppNavHost(navController: NavHostController) {
-    // AuthViewModel is instantiated ONCE here
+    // ViewModels are instantiated ONCE here
     val authViewModel: AuthViewModel = viewModel()
+    val adminViewModel: AdminViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -104,7 +106,7 @@ fun AppNavHost(navController: NavHostController) {
 
         // Admin main graph
         composable(Screen.AdminHome.route) {
-            AdminGraph(mainNavController = navController)
+            AdminGraph(mainNavController = navController, adminViewModel = adminViewModel)
         }
 
         // Direct Message Screen (at the main nav level)

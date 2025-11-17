@@ -17,6 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,24 +27,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.navigation.NavHostController
-
-data class AdminRequest(
-    val title: String,
-    val status: String,
-    val author: String
-)
+import com.example.strathtankalumni.data.Collaboration
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 
 @Composable
 fun AdminRequestsScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    adminViewModel: AdminViewModel
 ) {
-    val requests = listOf(
-        AdminRequest("Eco-Friendly Packaging Solutions", "Pending", "Ava Harper"),
-        AdminRequest("Sustainable Energy Solutions", "Approved", "Ethan Carter"),
-        AdminRequest("Urban Farming Initiative", "Pending", "Olivia Bennett"),
-        AdminRequest("AI-Powered Education", "Approved", "Noah Thompson")
-    )
+    val requests by adminViewModel.collaborationRequests.collectAsState()
 
     Column(
         modifier = Modifier
@@ -71,7 +65,7 @@ fun AdminRequestsScreen(
 }
 
 @Composable
-private fun AdminRequestRow(request: AdminRequest) {
+private fun AdminRequestRow(request: Collaboration) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF030712))
@@ -85,7 +79,7 @@ private fun AdminRequestRow(request: AdminRequest) {
         ) {
             Column {
                 Text(
-                    text = "Project: ${request.title}",
+                    text = "Project: ${request.projectTitle}",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
@@ -96,7 +90,7 @@ private fun AdminRequestRow(request: AdminRequest) {
                     style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF9CA3AF))
                 )
                 Text(
-                    text = "By: ${request.author}",
+                    text = "By: ${request.collaboratorName}",
                     style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF6B7280))
                 )
             }

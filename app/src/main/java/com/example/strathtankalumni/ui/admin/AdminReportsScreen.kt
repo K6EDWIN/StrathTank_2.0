@@ -21,6 +21,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,24 +31,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.strathtankalumni.R
-
-data class AdminReport(
-    val reporter: String,
-    val subject: String,
-    val reason: String,
-    val imageRes: Int? = null
-)
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 
 @Composable
 fun AdminReportsScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    adminViewModel: AdminViewModel
 ) {
-    val reports = listOf(
-        AdminReport("Ethan Harper", "User: Olivia Bennett", "Inappropriate Content", null),
-        AdminReport("Noah Carter", "Project: Eco-Friendly Packaging", "Copyright Infringement", R.drawable.sample_eco),
-        AdminReport("Sophia Clark", "User: Liam Davis", "Harassment", null)
-    )
+    // Placeholder – wire to a real reports collection when available
+    val reports by adminViewModel.dashboardStats.collectAsState()
 
     Column(
         modifier = Modifier
@@ -55,18 +49,28 @@ fun AdminReportsScreen(
             .padding(paddingValues)
             .padding(16.dp)
     ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(reports) { report ->
-                AdminReportCard(report = report)
+        // Currently we do not have a reports collection in Firestore schema.
+        // Keep the layout but show a single placeholder item based on stats.
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item {
+                AdminReportCard(
+                    reporter = "System",
+                    subject = "Reports feature not configured",
+                    reason = "Create a 'reports' collection in Firestore to feed this screen.",
+                    imageRes = null
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AdminReportCard(report: AdminReport) {
+private fun AdminReportCard(
+    reporter: String,
+    subject: String,
+    reason: String,
+    imageRes: Int?
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF030712)),
@@ -79,22 +83,22 @@ private fun AdminReportCard(report: AdminReport) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Reported by: ${report.reporter}",
+                text = "Reported by: $reporter",
                 style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF9CA3AF))
             )
             Text(
-                text = report.subject,
+                text = subject,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
             )
             Text(
-                text = "Reason: ${report.reason}",
+                text = "Reason: $reason",
                 style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF9CA3AF))
             )
 
-            report.imageRes?.let {
+            imageRes?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Image(
                     painter = painterResource(id = it),
