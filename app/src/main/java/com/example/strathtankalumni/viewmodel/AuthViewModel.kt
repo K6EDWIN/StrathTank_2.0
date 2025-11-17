@@ -108,7 +108,7 @@ class AuthViewModel : ViewModel() {
     private val _collaborationMembers = MutableStateFlow<List<User>>(emptyList())
     val collaborationMembers: StateFlow<List<User>> = _collaborationMembers
 
-    // --- NEW PROJECT COMMENT/LIKE STATEFLOWS ---
+    // --- NEW PROJECT COMMENT/ STATEFLOWS ---
     private val _projectComments = MutableStateFlow<List<Comment>>(emptyList())
     val projectComments: StateFlow<List<Comment>> = _projectComments.asStateFlow()
 

@@ -139,7 +139,7 @@ fun AlumniProjectsScreen(
             }
 
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Dynamic content based on ProjectsListState
             when (projectsState) {

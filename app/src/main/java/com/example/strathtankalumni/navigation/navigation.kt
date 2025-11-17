@@ -237,6 +237,14 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
                 )
             }
 
+            // ✅ --- ADD THIS BLOCK TO FIX THE CRASH ---
+            composable(Screen.AlumniCollaborations.route) {
+                AlumniCollaborationsScreen(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel
+                )
+            }
+
             // --- NEW: Collaboration Detail Screen ---
             composable(
                 route = Screen.CollaborationDetail.route,
