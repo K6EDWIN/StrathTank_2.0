@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.People
+// ✅ --- ADDED THIS IMPORT ---
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,7 @@ fun AlumniNavLayout(
     val title = when (currentRoute) {
         Screen.AlumniHome.route -> "Home"
         Screen.AlumniProjects.route -> "Projects"
+        // ❌ --- REMOVED "Collabs" TITLE FROM HERE ---
         Screen.AlumniMessages.route -> "Messages"
         Screen.AlumniProfile.route -> "Alumni Profile"
         Screen.AlumniList.route -> ""
@@ -67,13 +70,23 @@ fun AlumniNavLayout(
                                 )
                             }
 
-                            // ✅ MODIFIED: Use 'navController' here
                             IconButton(onClick = {
                                 navController.navigate(Screen.AlumniNotifications.route)
                             }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Notifications,
                                     contentDescription = "Notifications",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            // ✅ --- ADDED "COLLABS" ICONBUTTON HERE ---
+                            IconButton(onClick = {
+                                navController.navigate(Screen.AlumniCollaborations.route)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Groups,
+                                    contentDescription = "My Collaborations",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }

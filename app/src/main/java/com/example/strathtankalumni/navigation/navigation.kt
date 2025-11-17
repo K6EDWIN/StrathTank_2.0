@@ -12,13 +12,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.strathtankalumni.ui.admin.AdminDashboardScreen
+import com.example.strathtankalumni.ui.admin.AdminGraph
 import com.example.strathtankalumni.ui.alumni.*
 import com.example.strathtankalumni.ui.auth.ForgotPasswordScreen
 import com.example.strathtankalumni.ui.auth.LoginScreen
 import com.example.strathtankalumni.ui.auth.RegistrationScreen
 import com.example.strathtankalumni.ui.auth.WelcomeScreen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import com.example.strathtankalumni.viewmodel.AdminViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -40,8 +41,12 @@ sealed class Screen(val route: String) {
 
     object AlumniCollaborations : Screen("alumni_collaborations_screen")
 
-    // Admin Screen
-    object AdminHome : Screen("admin_home_screen")
+    // Admin Screens
+    object AdminHome : Screen("admin_dashboard_screen")
+    object AdminUsers : Screen("admin_users_screen")
+    object AdminProjects : Screen("admin_projects_screen")
+    object AdminRequests : Screen("admin_requests_screen")
+    object AdminReports : Screen("admin_reports_screen")
 
     // --- NEW Project Routes from Ian's Branch ---
     object AlumniAddProjects : Screen("alumni_add_projects_screen")
@@ -76,8 +81,9 @@ sealed class Screen(val route: String) {
 // ------------------ MAIN APP NAVIGATION ------------------ //
 @Composable
 fun AppNavHost(navController: NavHostController) {
-    // AuthViewModel is instantiated ONCE here
+    // ViewModels are instantiated ONCE here
     val authViewModel: AuthViewModel = viewModel()
+    val adminViewModel: AdminViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -98,9 +104,9 @@ fun AppNavHost(navController: NavHostController) {
             AlumniGraph(mainNavController = navController, authViewModel = authViewModel)
         }
 
-        // Admin
+        // Admin main graph
         composable(Screen.AdminHome.route) {
-            AdminDashboardScreen(navController = navController)
+            AdminGraph(mainNavController = navController, adminViewModel = adminViewModel)
         }
 
         // Direct Message Screen (at the main nav level)
@@ -232,6 +238,14 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
             // --- NEW: Add Project Screen ---
             composable(Screen.AlumniAddProjects.route) {
                 AlumniAddProjectsPage(
+                    navController = alumniNavController,
+                    authViewModel = authViewModel
+                )
+            }
+
+            // ✅ --- ADD THIS BLOCK TO FIX THE CRASH ---
+            composable(Screen.AlumniCollaborations.route) {
+                AlumniCollaborationsScreen(
                     navController = alumniNavController,
                     authViewModel = authViewModel
                 )
