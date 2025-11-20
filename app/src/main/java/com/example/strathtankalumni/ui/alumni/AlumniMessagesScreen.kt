@@ -54,6 +54,7 @@ fun AlumniMessagesScreen(
         }
     }
 
+<<<<<<< Updated upstream
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,14 +108,92 @@ fun AlumniMessagesScreen(
                             val otherUser = conversationWithUser.user
                             // Navigate to chat: pass ID and Name
                             navController.navigate("direct_message/${otherUser.userId}/${otherUser.firstName} ${otherUser.lastName}")
+=======
+    val conversations by viewModel.conversations.collectAsState()
+
+
+    // --- EDIT: Added Box wrapper for loading spinner ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (currentUser == null) {
+            // --- Show a centered spinner while loading ---
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            // --- Once loaded, show content ---
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+            ) {
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    placeholder = { Text("Search") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                // No Spacer here - this removes the gap
+
+                if (conversations.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // --- EDIT: Changed from fillMaxSize ---
+                            .fillMaxWidth(), // --- EDIT: Added ---
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            // ✅ 7. UPDATED EMPTY TEXT
+                            text = if (acceptedConnections.isEmpty())
+                                "You haven't made any connections yet.\nFind alumni to connect with."
+                            else
+                                "No messages yet.\nStart a chat with one of your connections!",
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f), // --- EDIT: Added .weight(1f) ---
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        items(conversations) { convoWithUser ->
+                            val otherUser = convoWithUser.user
+                            val conversation = convoWithUser.conversation
+
+                            // ⬇️ 2. PASS THE UNREAD COUNT
+                            ConversationRow(
+                                name = "${otherUser.firstName} ${otherUser.lastName}",
+                                lastMessage = conversation.lastMessage,
+                                timestamp = "now", // TODO: Format this
+                                photoUrl = otherUser.profilePhotoUrl,
+                                // This comes from the ConversationWithUser class
+                                unreadCount = convoWithUser.unreadCount,
+                                onClick = {
+                                    // The DirectMessageScreen will call markAsRead
+                                    navController.navigate(
+                                        Screen.DirectMessage.createRoute(
+                                            userName = "${otherUser.firstName} ${otherUser.lastName}",
+                                            otherUserId = otherUser.userId
+                                        )
+                                    )
+                                }
+                            )
+>>>>>>> Stashed changes
                         }
-                    )
+                    }
                 }
             }
         }
     }
 }
 
+<<<<<<< Updated upstream
+=======
+// (ConversationRow is unchanged)
+@OptIn(ExperimentalMaterial3Api::class) // Added for Badge
+>>>>>>> Stashed changes
 @Composable
 fun ConversationItem(
     conversationWithUser: ConversationWithUser,

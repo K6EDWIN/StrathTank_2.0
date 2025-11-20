@@ -71,6 +71,7 @@ fun DirectMessageScreen(
     // 2. Get CURRENT user's photo
     val currentUserPhotoUrl = currentUser?.profilePhotoUrl
 
+<<<<<<< Updated upstream
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -118,6 +119,71 @@ fun DirectMessageScreen(
                 }
             }
         )
+=======
+    // --- EDIT: Added Box wrapper for loading spinner ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (currentUser == null) {
+            // --- Show a centered spinner while loading ---
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            // --- Once loaded, show content ---
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                // This is correct
+                CenterAlignedTopAppBar(
+                    title = { Text(userName, fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    reverseLayout = true,
+                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+                    // --- EDIT: Replaced Spacer item with contentPadding ---
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    // --- EDIT: Removed Spacer item ---
+                    // item { Spacer(Modifier.height(8.dp)) }
+
+                    items(messages.reversed()) { message ->
+                        // 3. Pass BOTH URLs to MessageBubble
+                        MessageBubble(
+                            text = message.text,
+                            isFromUser = message.senderId == currentUserId,
+                            otherUserPhotoUrl = otherUserPhotoUrl,
+                            currentUserPhotoUrl = currentUserPhotoUrl
+                        )
+                    }
+                }
+
+                // 4. Pass CURRENT user's URL to MessageInput
+                MessageInput(
+                    currentUserPhotoUrl = currentUserPhotoUrl,
+                    onMessageSend = { text ->
+                        if (currentUserId != null) {
+                            viewModel.sendMessage(
+                                text = text,
+                                senderId = currentUserId,
+                                receiverId = otherUserId
+                            )
+                        }
+                    }
+                )
+            }
+        }
+>>>>>>> Stashed changes
     }
 }
 
