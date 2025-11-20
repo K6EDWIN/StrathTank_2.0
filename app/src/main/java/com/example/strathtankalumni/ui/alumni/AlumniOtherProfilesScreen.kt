@@ -1,13 +1,12 @@
-
 package com.example.strathtankalumni.ui.alumni
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,28 +27,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Size
 import com.example.strathtankalumni.R
+import com.example.strathtankalumni.data.ExperienceItem
+import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import com.example.strathtankalumni.viewmodel.ProjectsListState
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import com.example.strathtankalumni.data.ExperienceItem
-import coil.size.Size
 
-// This Project class is a local-only placeholder, which is fine.
-data class Project(
-    val title: String = "",
-    val description: String = "",
-    val imageUrl: String = ""
-)
-
-// Re-creating this enum locally as it's not in the data layer
+// Enum for connection logic
 enum class ConnectionStatus {
     NONE,
     PENDING_SENT,
@@ -66,13 +62,13 @@ fun OtherUserProfileScreen(
 ) {
     val context = LocalContext.current
     var userProfile by remember { mutableStateOf<User?>(null) }
-    var userProjects by remember { mutableStateOf<List<Project>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
-
     val connections by authViewModel.connections.collectAsState()
+
+    val projectsState by authViewModel.allProjectsState.collectAsState()
 
     LaunchedEffect(userId) {
         isLoading = true
@@ -80,23 +76,17 @@ fun OtherUserProfileScreen(
             userProfile = user
             isLoading = false
         }
-
         authViewModel.loadConnections()
         authViewModel.fetchAllAlumni()
+        authViewModel.fetchAllProjects()
+    }
 
-        // This is placeholder data, as per your file
-        userProjects = listOf(
-            Project(
-                "AI-Powered Recommendation System",
-                "Developed an AI-driven recommendation engine for e-commerce platforms, enhancing user engagement and sales.",
-                "https_placeholder_image_url_1"
-            ),
-            Project(
-                "Mobile App for Fitness Tracking",
-                "Designed and built a mobile application for tracking fitness activities, providing personalized workout plans and progress analysis.",
-                "https_placeholder_image_url_2"
-            )
-        )
+    val userProjects = remember(projectsState, userId) {
+        if (projectsState is ProjectsListState.Success) {
+            (projectsState as ProjectsListState.Success).projects.filter { it.userId == userId }
+        } else {
+            emptyList()
+        }
     }
 
     val connection = remember(connections, userId) {
@@ -113,17 +103,19 @@ fun OtherUserProfileScreen(
         }
     }
 
-
     Scaffold(
+        containerColor = Color(0xFFF9FAFB),
         topBar = {
-            TopAppBar(
-                title = { Text("Alumni Profile") },
+            CenterAlignedTopAppBar(
+                title = { Text("Alumni Profile", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -133,31 +125,30 @@ fun OtherUserProfileScreen(
             }
         } else if (userProfile == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("User not found.")
+                Text("User not found.", color = Color.Gray)
             }
         } else {
             val userData = userProfile!!
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .verticalScroll(rememberScrollState())
             ) {
-
+                // --- HEADER SECTION ---
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .background(Color.White)
+                        .padding(top = 24.dp, bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(userData.profilePhotoUrl.takeIf { !it.isNullOrBlank() }
-                                ?: R.drawable.noprofile)
+                            .data(userData.profilePhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                             .crossfade(true)
-                            .size(Size(256, 256)) // ✅ --- CRASH FIX 1 ---
+                            .size(Size(256, 256))
                             .allowHardware(false)
                             .build(),
                         contentDescription = "Profile photo",
@@ -180,14 +171,12 @@ fun OtherUserProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     val classMajorText = buildString {
-                        if (userData.graduationYear.isNotBlank()) {
-                            append("Class of ${userData.graduationYear}")
-                        }
+                        if (userData.graduationYear.isNotBlank()) append("Class of ${userData.graduationYear}")
                         if (userData.degree.isNotBlank()) {
-                            if (this.isNotEmpty()) append(" | ")
+                            if (this.isNotEmpty()) append(" • ")
                             append(userData.degree)
                         }
-                    }.ifEmpty { "No education details provided" }
+                    }.ifEmpty { "Member" }
 
                     Text(
                         text = classMajorText,
@@ -195,62 +184,51 @@ fun OtherUserProfileScreen(
                         fontSize = 14.sp
                     )
 
-                    Text(
-                        text = userData.country.takeIf { !it.isNullOrBlank() }
-                            ?: "No location provided",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                    if(userData.country.isNotBlank()) {
+                        Text(
+                            text = userData.country,
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
+                    // --- ACTION BUTTONS ---
                     Column(
-                        modifier = Modifier.fillMaxWidth(0.8f),
+                        modifier = Modifier.fillMaxWidth(0.9f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         when (connectionStatus) {
                             ConnectionStatus.NONE -> {
                                 Button(
-                                    onClick = {
-                                        authViewModel.sendConnectionRequest(userData)
-                                    },
+                                    onClick = { authViewModel.sendConnectionRequest(userData) },
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Connect")
-                                }
+                                    shape = RoundedCornerShape(12.dp)
+                                ) { Text("Connect") }
                             }
                             ConnectionStatus.PENDING_SENT -> {
-                                Button(
+                                OutlinedButton(
                                     onClick = { },
                                     modifier = Modifier.fillMaxWidth(),
                                     enabled = false,
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        disabledContainerColor = Color.LightGray
-                                    )
-                                ) {
-                                    Text("Request Sent")
-                                }
+                                    shape = RoundedCornerShape(12.dp)
+                                ) { Text("Request Sent") }
                             }
                             ConnectionStatus.PENDING_RECEIVED -> {
-                                Button(
-                                    onClick = { authViewModel.updateConnectionStatus(connection!!, "accepted") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Accept Request")
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = { authViewModel.updateConnectionStatus(connection!!, "declined") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error
-                                    )
-                                ) {
-                                    Text("Decline")
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = { authViewModel.updateConnectionStatus(connection!!, "accepted") },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) { Text("Accept") }
+
+                                    OutlinedButton(
+                                        onClick = { authViewModel.updateConnectionStatus(connection!!, "declined") },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                    ) { Text("Decline") }
                                 }
                             }
                             ConnectionStatus.ACCEPTED -> {
@@ -264,201 +242,158 @@ fun OtherUserProfileScreen(
                                         )
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Message")
-                                }
+                                    shape = RoundedCornerShape(12.dp)
+                                ) { Text("Message") }
                             }
                         }
 
                         val linkedIn = userData.linkedinUrl
-                        val hasLinkedIn = !linkedIn.isNullOrBlank()
-
-                        if (hasLinkedIn) {
+                        if (!linkedIn.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
                                 onClick = {
                                     try {
-                                        val intent = Intent(
-                                            Intent.ACTION_VIEW,
-                                            Uri.parse(linkedIn)
-                                        )
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkedIn))
                                         context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        // Handle invalid URL
-                                    }
+                                    } catch (e: Exception) { /* Handle error */ }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF0A66C2)
-                                )
-                            ) {
-                                Text("View LinkedIn")
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A66C2))
+                            ) { Text("LinkedIn Profile") }
+                        }
+                    }
+                }
+
+                // --- DETAILS SECTION ---
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    SectionCard {
+                        ProfileSection("About", userData.about.takeIf { !it.isNullOrBlank() } ?: "No bio available.")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionCard {
+                        Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (userData.experience.isEmpty()) {
+                            Text("No experience added.", color = Color.Gray, fontSize = 14.sp)
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                userData.experience.forEach { item -> ExperienceItemView(item) }
                             }
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionCard {
+                        Text("Skills", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (userData.skills.isNullOrEmpty()) {
+                            Text("No skills listed.", color = Color.Gray, fontSize = 14.sp)
+                        } else {
+                            ViewOnlyFlowRow(items = userData.skills)
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+                        Text("Contact", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ContactRow(icon = Icons.Default.Email, text = userData.email)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    ProfileSection(
-                        "About",
-                        userData.about.takeIf { !it.isNullOrBlank() }
-                            ?: "No about information provided."
+                    Text(
+                        "Projects",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
                     )
 
-                    // Corrected Experience Section
-                    Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.align(Alignment.Start))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (userData.experience.isEmpty()) {
-                        Text("No experience added", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+                    if (userProjects.isEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    Icons.Default.FolderOpen,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color.LightGray
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "${userData.firstName} has no projects yet.",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            userData.experience.forEach { item ->
-                                ExperienceItemView(item = item) // This composable is needed
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "Skills",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        if (userData.skills.isNullOrEmpty()) {
-                            Text(
-                                "No skills listed.",
-                                color = Color.Gray,
-                                fontSize = 14.sp
+                        userProjects.forEach { project ->
+                            // ✅ FIX: Using Unique Name "UserProfileProjectCard"
+                            UserProfileProjectCard(
+                                project = project,
+                                onClick = {
+                                    navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
+                                }
                             )
-                        } else {
-                            // Use the private function
-                            ViewOnlyFlowRow(items = userData.skills)
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "Contact",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ContactRow(
-                            icon = Icons.Default.Email,
-                            text = userData.email
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Divider()
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "Projects",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (userProjects.isEmpty()) {
-                            Text(
-                                "No projects added yet.",
-                                color = Color.Gray,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            userProjects.forEach { project ->
-                                ProjectCard(project = project, onClick = {
-                                    // TODO: Navigate to project details screen
-                                })
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(64.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }
     }
 }
 
-@Composable
-private fun ProfileSection(
-    title: String,
-    content: String
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            title,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            content,
-            color = Color.Gray,
-            fontSize = 14.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-    }
-}
-
+// --- HELPER COMPONENTS ---
 
 @Composable
-private fun ContactRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    isLink: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(
-                enabled = onClick != null,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = LocalIndication.current,
-                onClick = { onClick?.invoke() }
-            ),
-        verticalAlignment = Alignment.CenterVertically
+private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = if (isLink) Color(0xFF0A66C2) else Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text,
-            color = if (isLink) Color(0xFF0A66C2) else Color.Black
-        )
+        Column(modifier = Modifier.padding(16.dp), content = content)
     }
 }
 
+@Composable
+private fun ProfileSection(title: String, content: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(content, color = Color.DarkGray, fontSize = 14.sp, lineHeight = 20.sp)
+    }
+}
 
-// ✅ 2. MADE THIS FUNCTION private TO FIX CONFLICT
+@Composable
+private fun ContactRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text, color = Color.DarkGray, fontSize = 14.sp)
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ViewOnlyFlowRow(items: List<String>) {
     FlowRow(
-        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -466,89 +401,59 @@ private fun ViewOnlyFlowRow(items: List<String>) {
             SuggestionChip(
                 onClick = { },
                 label = { Text(skill) },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = Color(0xFFF1F3F4)
-                ),
+                colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFF0F2F5))
             )
         }
     }
 }
 
-// (This was missing from the user's file, but is required by the code)
 @Composable
 private fun ExperienceItemView(item: ExperienceItem) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
+    Row(verticalAlignment = Alignment.Top) {
         Icon(
             Icons.Default.Business,
-            contentDescription = null,
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color.LightGray, CircleShape)
-                .padding(8.dp),
-            tint = Color.DarkGray
+            null,
+            modifier = Modifier.size(32.dp).background(Color(0xFFF0F2F5), CircleShape).padding(6.dp),
+            tint = Color.Gray
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text(item.role, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(item.companyName, fontSize = 14.sp)
-            Text(
-                text = "${item.startDate} - ${if (item.isCurrent) "Present" else item.endDate}",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
+            Text(item.role, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(item.companyName, fontSize = 13.sp, color = Color.DarkGray)
+            Text("${item.startDate} - ${if (item.isCurrent) "Present" else item.endDate}", color = Color.Gray, fontSize = 12.sp)
         }
     }
 }
 
-
+// ✅ FIX: Renamed Component to avoid "Conflicting Overloads"
 @Composable
-fun ProjectCard(
-    project: Project,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+private fun UserProfileProjectCard(project: Project, onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(project.imageUrl.ifBlank { R.drawable.noprofile })
+                    .data(project.imageUrl.ifBlank { R.drawable.sample_featured })
                     .crossfade(true)
-                    .size(Size(1024, 1024)) // ✅ --- CRASH FIX 2 ---
-                    .allowHardware(false)
                     .build(),
-                contentDescription = project.title,
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(160.dp)
                     .background(Color.LightGray),
                 contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.noprofile)
+                error = painterResource(id = R.drawable.sample_featured)
             )
-
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = project.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+                Text(project.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = project.description,
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    maxLines = 3
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = onClick) {
-                    Text("View Project")
-                }
+                Text(project.description, fontSize = 14.sp, color = Color.Gray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("View Project", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
         }
     }

@@ -1,31 +1,46 @@
 package com.example.strathtankalumni.ui.alumni
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Handshake
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.strathtankalumni.R
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import com.example.strathtankalumni.viewmodel.NotificationItemData
+import com.example.strathtankalumni.viewmodel.NotificationType
+
+// ❌ REMOVED: NotificationType enum (It is now in NotificationModels.kt)
+// ❌ REMOVED: NotificationItemData data class (It is now in NotificationModels.kt)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,11 +49,29 @@ fun AlumniNotificationsScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val notifications by authViewModel.notifications.collectAsState()
+    val unreadCount = notifications.size
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Notifications") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Notifications", fontWeight = FontWeight.Bold)
+
+                        if (unreadCount > 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = Color.White
+                            ) {
+                                Text(
+                                    text = unreadCount.toString(),
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -51,52 +84,41 @@ fun AlumniNotificationsScreen(
                     containerColor = Color.White
                 )
             )
-        }
+        },
+        containerColor = Color(0xFFF9FAFB)
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (notifications.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillParentMaxSize()
-                            .padding(bottom = 80.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No notifications yet", color = Color.Gray)
-                    }
-                }
-            } else {
-                items(notifications) { notification ->
+        if (notifications.isEmpty()) {
+            EmptyNotificationState(modifier = Modifier.padding(paddingValues))
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(notifications, key = { it.id }) { notification ->
                     NotificationItem(
                         item = notification,
                         onClick = {
                             when (notification.type) {
                                 NotificationType.CONNECTION_REQUEST -> {
                                     notification.referenceId?.let { senderId ->
-                                        navController.navigate(
-                                            Screen.OtherProfile.createRoute(senderId)
-                                        )
+                                        navController.navigate(Screen.OtherProfile.createRoute(senderId))
                                     }
                                 }
-                                // --- NEW CASE ---
                                 NotificationType.COLLABORATION_REQUEST -> {
                                     notification.referenceId?.let { collaborationId ->
-                                        navController.navigate(
-                                            Screen.CollaborationDetail.createRoute(collaborationId)
-                                        )
+                                        navController.navigate(Screen.CollaborationDetail.createRoute(collaborationId))
                                     }
                                 }
                                 NotificationType.NEW_MESSAGE -> {
-                                    // TODO: Navigate to DM screen
+                                    notification.referenceId?.let { userId ->
+                                        navController.navigate("direct_message/$userId/User")
+                                    }
                                 }
-                                NotificationType.EVENT -> {
-                                    // TODO: Navigate to Event details screen
+                                NotificationType.SYSTEM_UPDATE -> {
+                                    // Handle generic updates
                                 }
                             }
                         }
@@ -107,54 +129,139 @@ fun AlumniNotificationsScreen(
     }
 }
 
-
 @Composable
 fun NotificationItem(
     item: NotificationItemData,
     onClick: () -> Unit
 ) {
-    Row(
+    val (iconVector, iconColor, containerColor) = when (item.type) {
+        NotificationType.CONNECTION_REQUEST -> Triple(
+            Icons.Default.PersonAdd,
+            Color(0xFF0A66C2),
+            Color(0xFFE8F4F9)
+        )
+        NotificationType.COLLABORATION_REQUEST -> Triple(
+            Icons.Default.Handshake,
+            Color(0xFFD84315),
+            Color(0xFFFBE9E7)
+        )
+        NotificationType.NEW_MESSAGE -> Triple(
+            Icons.Default.Mail,
+            Color(0xFF2E7D32),
+            Color(0xFFE8F5E9)
+        )
+        NotificationType.SYSTEM_UPDATE -> Triple(
+            Icons.Default.Image,
+            Color(0xFF6200EE),
+            Color(0xFFEDE7F6)
+        )
+    }
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = LocalIndication.current,
-                onClick = onClick
-            )
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        // Icon with circle background
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFF1F3F4)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.type.name,
-                tint = Color.DarkGray,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Icon Box
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(containerColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
-        Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-        // Text content
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = item.subtitle,
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
+                // Text content
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = item.subtitle,
+                        fontSize = 14.sp,
+                        color = Color.DarkGray,
+                        lineHeight = 20.sp
+                    )
+
+                    // Optional: Add a "View" prompt
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Tap to view details",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Image Support
+            if (item.imageUrl != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Notification Attachment",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5)),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.sample_featured)
+                )
+            }
         }
+    }
+}
+
+@Composable
+fun EmptyNotificationState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.NotificationsOff,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = Color.LightGray
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "No notifications yet",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.Gray
+        )
+        Text(
+            text = "We'll let you know when something arrives.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray
+        )
     }
 }

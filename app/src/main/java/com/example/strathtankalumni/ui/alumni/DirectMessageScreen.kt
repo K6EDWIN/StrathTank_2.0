@@ -8,8 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import coil.size.Size
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,13 +20,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Size
 import com.example.strathtankalumni.R
+import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-
+//import com.example.strathtankalumni.viewmodel.MessagesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,271 +43,227 @@ fun DirectMessageScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
 
+    // ✅ State to hold the REAL profile fetched from DB
+    var chatPartner by remember { mutableStateOf<User?>(null) }
 
     LaunchedEffect(key1 = currentUserId, key2 = otherUserId) {
         if (currentUserId != null) {
             viewModel.loadDirectMessages(currentUserId, otherUserId)
-
-            // It resets the unread count to 0 when you open the chat
             viewModel.markAsRead(currentUserId, otherUserId)
+        }
+        // ✅ FIX: Fetch the real user details immediately
+        authViewModel.fetchUserById(otherUserId) { user ->
+            chatPartner = user
         }
     }
 
     DisposableEffect(Unit) {
-        onDispose {
-            viewModel.clearDirectMessages()
-        }
+        onDispose { viewModel.clearDirectMessages() }
     }
 
     val messages by viewModel.directMessages.collectAsState()
-    val conversations by viewModel.conversations.collectAsState()
 
-    // Find the specific user object for this chat
-    val otherUser = remember(conversations, otherUserId) {
-        conversations.find { it.user.userId == otherUserId }?.user
-    }
+    // ✅ FIX: Use fetched name if available, else fallback to nav param
+    val displayName = chatPartner?.let { "${it.firstName} ${it.lastName}" } ?: userName
+    val displayPhoto = chatPartner?.profilePhotoUrl
+    val myPhoto = currentUser?.profilePhotoUrl
 
-    // 1. Get OTHER user's photo
-    val otherUserPhotoUrl = otherUser?.profilePhotoUrl
-
-    // 2. Get CURRENT user's photo
-    val currentUserPhotoUrl = currentUser?.profilePhotoUrl
-
-<<<<<<< Updated upstream
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        CenterAlignedTopAppBar(
-            title = { Text(userName, fontWeight = FontWeight.Bold) },
-            navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
-        )
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages) { message ->
-                MessageBubble(
-                    text = message.text,
-                    isFromUser = message.senderId == currentUserId,
-                    otherUserPhotoUrl = otherUserPhotoUrl,
-                    currentUserPhotoUrl = currentUserPhotoUrl
-                )
-            }
-        }
-
-
-        // 4. Pass CURRENT user's URL to MessageInput
-        MessageInput(
-            currentUserPhotoUrl = currentUserPhotoUrl,
-            onMessageSend = { text ->
-                if (currentUserId != null) {
-                    viewModel.sendMessage(
-                        text = text,
-                        senderId = currentUserId,
-                        receiverId = otherUserId
-                    )
-                }
-            }
-        )
-=======
-    // --- EDIT: Added Box wrapper for loading spinner ---
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (currentUser == null) {
-            // --- Show a centered spinner while loading ---
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else {
-            // --- Once loaded, show content ---
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                // This is correct
-                CenterAlignedTopAppBar(
-                    title = { Text(userName, fontWeight = FontWeight.Bold) },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    reverseLayout = true,
-                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
-                    // --- EDIT: Replaced Spacer item with contentPadding ---
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    // --- EDIT: Removed Spacer item ---
-                    // item { Spacer(Modifier.height(8.dp)) }
-
-                    items(messages.reversed()) { message ->
-                        // 3. Pass BOTH URLs to MessageBubble
-                        MessageBubble(
-                            text = message.text,
-                            isFromUser = message.senderId == currentUserId,
-                            otherUserPhotoUrl = otherUserPhotoUrl,
-                            currentUserPhotoUrl = currentUserPhotoUrl
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        UserAvatar(photoUrl = displayPhoto, size = 32.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = displayName,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1
                         )
                     }
-                }
-
-                // 4. Pass CURRENT user's URL to MessageInput
-                MessageInput(
-                    currentUserPhotoUrl = currentUserPhotoUrl,
-                    onMessageSend = { text ->
-                        if (currentUserId != null) {
-                            viewModel.sendMessage(
-                                text = text,
-                                senderId = currentUserId,
-                                receiverId = otherUserId
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = Color.Black
+                )
+            )
+        },
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color(0xFFF5F7FB))
+        ) {
+            if (currentUser == null) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // --- Chat List ---
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        reverseLayout = true,
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(messages.reversed()) { message ->
+                            MessageBubble(
+                                text = message.text,
+                                isFromUser = message.senderId == currentUserId,
+                                showAvatar = message.senderId != currentUserId,
+                                userPhotoUrl = if (message.senderId == currentUserId) myPhoto else displayPhoto
                             )
                         }
                     }
-                )
+
+                    // --- Input Area ---
+                    Surface(
+                        tonalElevation = 2.dp,
+                        color = Color.White,
+                        shadowElevation = 8.dp
+                    ) {
+                        MessageInput(
+                            modifier = Modifier
+                                .navigationBarsPadding()
+                                .imePadding(),
+                            onMessageSend = { text ->
+                                if (currentUserId != null) {
+                                    viewModel.sendMessage(
+                                        text = text,
+                                        senderId = currentUserId,
+                                        receiverId = otherUserId
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
->>>>>>> Stashed changes
     }
 }
-
 
 @Composable
 private fun MessageBubble(
     text: String,
     isFromUser: Boolean,
-    otherUserPhotoUrl: String?,
-    currentUserPhotoUrl: String?
+    showAvatar: Boolean,
+    userPhotoUrl: String?
 ) {
-    val alignment = if (isFromUser) Alignment.CenterEnd else Alignment.CenterStart
-    val color =
-        if (isFromUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-    val textColor =
-        if (isFromUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+    val bubbleColor = if (isFromUser) MaterialTheme.colorScheme.primary else Color.White
+    val textColor = if (isFromUser) MaterialTheme.colorScheme.onPrimary else Color.Black
+    val shadowElevation = if (isFromUser) 0.dp else 1.dp
 
-    val shape = if (isFromUser) {
-        RoundedCornerShape(20.dp, 4.dp, 20.dp, 20.dp)
+    val bubbleShape = if (isFromUser) {
+        RoundedCornerShape(18.dp, 2.dp, 18.dp, 18.dp)
     } else {
-        RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
+        RoundedCornerShape(2.dp, 18.dp, 18.dp, 18.dp)
     }
 
-    @Composable
-    fun ProfileImage(photoUrl: String?) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
-                .crossfade(true)
-                .size(Size(128, 128))
-                .allowHardware(false)
-                .build(),
-            contentDescription = "Profile photo",
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFF1F3F4)),
-            contentScale = ContentScale.Crop,
-            error = painterResource(id = R.drawable.noprofile)
-        )
-    }
-
-    Box(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
+        horizontalArrangement = if (isFromUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
     ) {
-        Row(
-            verticalAlignment = Alignment.Bottom
-        ) {
-            // 1. If it's the OTHER user, show pic on the LEFT
-            if (!isFromUser) {
-                ProfileImage(photoUrl = otherUserPhotoUrl)
+        if (!isFromUser) {
+            if (showAvatar) {
+                UserAvatar(photoUrl = userPhotoUrl, size = 32.dp)
                 Spacer(Modifier.width(8.dp))
+            } else {
+                Spacer(Modifier.width(40.dp))
             }
+        }
 
-            // 2. The Text bubble is always in the middle
+        Surface(
+            color = bubbleColor,
+            shape = bubbleShape,
+            shadowElevation = shadowElevation,
+            modifier = Modifier.widthIn(max = 280.dp)
+        ) {
             Text(
                 text = text,
                 color = textColor,
-                modifier = Modifier
-                    .background(color, shape)
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                fontSize = 16.sp
             )
-
-            // 3. If it's the CURRENT user, show pic on the RIGHT
-            if (isFromUser) {
-                Spacer(Modifier.width(8.dp))
-                ProfileImage(photoUrl = currentUserPhotoUrl)
-            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageInput(
-    currentUserPhotoUrl: String?,
+    modifier: Modifier = Modifier,
     onMessageSend: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
-                .crossfade(true)
-                .size(Size(128, 128))
-                .allowHardware(false)
-                .build(),
-            contentDescription = "Your profile picture",
-            modifier = Modifier
-                .size(40.dp) // Kept original size
-                .clip(CircleShape)
-                .background(Color(0xFFF1F3F4)),
-            contentScale = ContentScale.Crop,
-            error = painterResource(id = R.drawable.noprofile)
-        )
-
-        Spacer(Modifier.width(8.dp))
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text("Message") },
+            placeholder = { Text("Type a message...") },
             modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
+            maxLines = 4,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFF5F7FB),
+                unfocusedContainerColor = Color(0xFFF5F7FB),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent
+            )
         )
+
         Spacer(Modifier.width(8.dp))
-        IconButton(onClick = {
-            if (text.isNotBlank()) {
-                onMessageSend(text)
-                text = ""
-            }
-        }) {
+
+        val isSendEnabled = text.isNotBlank()
+        IconButton(
+            onClick = {
+                if (isSendEnabled) {
+                    onMessageSend(text)
+                    text = ""
+                }
+            },
+            enabled = isSendEnabled,
+            modifier = Modifier.background(
+                if (isSendEnabled) MaterialTheme.colorScheme.primary else Color.LightGray,
+                CircleShape
+            )
+        ) {
             Icon(
-                imageVector = Icons.Default.Send,
-                contentDescription = "Send message",
-                tint = MaterialTheme.colorScheme.primary
+                imageVector = Icons.AutoMirrored.Filled.Send,
+                contentDescription = "Send",
+                tint = Color.White
             )
         }
     }
+}
+
+@Composable
+fun UserAvatar(photoUrl: String?, size: androidx.compose.ui.unit.Dp) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+            .crossfade(true)
+            .size(Size(128, 128))
+            .build(),
+        contentDescription = "Avatar",
+        modifier = Modifier.size(size).clip(CircleShape).background(Color.LightGray),
+        contentScale = ContentScale.Crop,
+        error = painterResource(id = R.drawable.noprofile)
+    )
 }

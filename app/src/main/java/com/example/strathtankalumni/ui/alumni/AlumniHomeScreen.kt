@@ -1,6 +1,7 @@
 package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -9,26 +10,24 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign // ✅ --- IMPORT ADDED ---
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter.State.Empty.painter
 import coil.request.ImageRequest
 import coil.size.Size
 import com.example.strathtankalumni.R
@@ -42,13 +41,13 @@ import com.example.strathtankalumni.viewmodel.ProjectsListState
 @Composable
 fun AlumniHomeScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues, // This is from the MAIN Scaffold (with the navbar)
+    paddingValues: PaddingValues, // Contains height of bottom navbar
     authViewModel: AuthViewModel = viewModel()
 ) {
     val projectsState by authViewModel.allProjectsState.collectAsState()
     val alumniList by authViewModel.alumniList.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
 
-    // Fetch all data needed for the dashboard
     LaunchedEffect(Unit) {
         authViewModel.fetchAllProjects()
         authViewModel.fetchAllAlumni()
@@ -71,250 +70,350 @@ fun AlumniHomeScreen(
     }
 
     Scaffold(
-        // --- THIS IS THE FIX ---
-        // Apply the main navbar padding from the outer Scaffold here
-        modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
-        // --- END OF FIX ---
-    ) { innerPadding -> // This is the padding from THIS Scaffold (which is 0dp)
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color(0xFFF9FAFB) // Light grey background
+    ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding), // Use padding from THIS Scaffold
-            // --- FIX 2 & 3: Removed vertical padding ---
-            contentPadding = PaddingValues()
+                .padding(innerPadding),
+            // Padding handling for Bottom Navbar
+            contentPadding = PaddingValues(
+                bottom = paddingValues.calculateBottomPadding() + 24.dp,
+                top = 0.dp
+            )
         ) {
 
-            // --- Suggested Users Section ---
+            // --- 1. Welcome Header ---
             item {
-                SuggestedUsersSection(
-                    users = alumniList,
-                    onUserClick = { userId ->
-                        navController.navigate(Screen.OtherProfile.createRoute(userId))
-                    }
+                WelcomeHeader(
+                    userName = currentUser?.firstName ?: "Alumni",
+                    photoUrl = currentUser?.profilePhotoUrl
                 )
-                Spacer(Modifier.height(24.dp))
             }
 
-            // --- Featured Projects Section ---
-            item {
-                FeaturedProjectsSection(
-                    projects = featuredProjects,
-                    onProjectClick = { projectId ->
-                        navController.navigate(Screen.AlumniProjectDetail.createRoute(projectId))
+            // --- 2. Featured Projects ---
+            if (featuredProjects.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = "Featured Projects",
+                        onSeeAll = {
+                            // Optional: Navigate to a "Featured" list if you have one
+                        }
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        items(featuredProjects, key = { it.id }) { project ->
+                            FeaturedProjectCard(
+                                project = project,
+                                onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id)) }
+                            )
+                        }
                     }
-                )
-                Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
+                }
             }
 
-            // --- Latest Projects Section ---
+            // --- 3. Suggested Connections ---
+            if (alumniList.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = "People you may know",
+                        onSeeAll = {
+                            // Navigate to AlumniListScreen
+                            navController.navigate(Screen.AlumniList.route)
+                        }
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        items(alumniList.shuffled().take(8), key = { it.userId }) { user ->
+                            SuggestedUserCard(
+                                user = user,
+                                onClick = { navController.navigate(Screen.OtherProfile.createRoute(user.userId)) }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+
+            // --- 4. Latest Projects ---
             item {
-                Text(
-                    text = "Latest Projects",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    // --- FIX 1: Centered title ---
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(16.dp))
+                SectionHeader(title = "Latest Projects", showSeeAll = false)
             }
 
             if (latestProjects.isEmpty()) {
                 item {
-                    Text(
-                        text = "No projects found.",
-                        color = Color.Gray,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No projects found.", color = Color.Gray)
+                    }
                 }
             } else {
                 items(latestProjects, key = { it.id }) { project ->
-                    // Re-using the ProjectCard from AlumniProjectsScreen.kt
-                    // Add horizontal padding to the card itself
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ProjectCard(
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        // ✅ FIX: Renamed to LatestProjectItem to avoid conflict
+                        LatestProjectItem(
                             project = project,
-                            onClick = {
-                                navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
-                            }
+                            onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id)) }
                         )
                     }
-                    Spacer(Modifier.height(16.dp)) // Add space between cards
                 }
             }
         }
     }
 }
 
-// --- Composable for "Suggested for you" Section ---
+// ==========================================
+// COMPONENTS
+// ==========================================
 
 @Composable
-private fun SuggestedUsersSection(
-    users: List<User>,
-    onUserClick: (String) -> Unit
-) {
-    val shuffledUsers = remember(users) { users.shuffled().take(10) }
+private fun WelcomeHeader(userName: String, photoUrl: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Text(
+                text = "Welcome back,",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Suggested for you",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            // --- FIX 1: Centered title ---
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            items(shuffledUsers, key = { it.userId }) { user ->
-                SuggestedUserCard(
-                    user = user,
-                    onClick = { onUserClick(user.userId) }
-                )
-            }
+        Box {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                    .crossfade(true)
+                    .size(Size(128, 128))
+                    .build(),
+                contentDescription = "Profile",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, Color.LightGray, CircleShape),
+                contentScale = ContentScale.Crop,
+                error = painterResource(id = R.drawable.noprofile)
+            )
+            // Notification dot
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(Color.Red)
+                    .align(Alignment.TopEnd)
+                    .border(2.dp, Color.White, CircleShape)
+            )
         }
     }
 }
 
 @Composable
-private fun SuggestedUserCard(
-    user: User,
-    onClick: () -> Unit
+private fun SectionHeader(
+    title: String,
+    showSeeAll: Boolean = true,
+    onSeeAll: () -> Unit = {}
 ) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        if (showSeeAll) {
+            Text(
+                text = "See All",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clickable { onSeeAll() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestedUserCard(user: User, onClick: () -> Unit) {
     Card(
         modifier = Modifier
-            .width(160.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .width(140.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(user.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
                     .crossfade(true)
-                    .size(Size(256, 256)) // ✅ CRASH FIX
-                    .allowHardware(false) // ✅ CRASH FIX
                     .build(),
-                contentDescription = "Profile Photo",
+                contentDescription = null,
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(60.dp)
                     .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.noprofile)
+                    .background(Color(0xFFF1F3F4)),
+                contentScale = ContentScale.Crop
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "${user.firstName} ${user.lastName}",
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
-            Spacer(Modifier.height(4.dp))
             Text(
                 text = user.degree.ifBlank { "Alumni" },
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color.Gray,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(12.dp))
-            Button(
+
+            OutlinedButton(
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
+                modifier = Modifier.height(32.dp).fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Text("View Profile", fontSize = 12.sp)
+                Text("View", fontSize = 12.sp)
             }
         }
     }
 }
 
-// --- Composable for "Featured Projects" Section ---
-
 @Composable
-private fun FeaturedProjectsSection(
-    projects: List<Project>,
-    onProjectClick: (String) -> Unit
-) {
-    if (projects.isEmpty()) return // Don't show the section if there are no featured projects
+private fun FeaturedProjectCard(project: Project, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .width(260.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(modifier = Modifier.height(160.dp)) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(project.imageUrl.ifEmpty { R.drawable.sample_featured })
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Featured Projects",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            // --- FIX 1: Centered title ---
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            items(projects, key = { it.id }) { project ->
-                FeaturedProjectCard(
-                    project = project,
-                    onClick = { onProjectClick(project.id) }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                            startY = 100f
+                        )
+                    )
+            )
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp),
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Featured",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = project.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = project.projectType,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f)
                 )
             }
         }
     }
 }
 
+// ✅ FIX: Renamed to LatestProjectItem to prevent conflict with other files
 @Composable
-private fun FeaturedProjectCard(
+fun LatestProjectItem(
     project: Project,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .width(280.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column {
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(project.imageUrl.ifEmpty { R.drawable.sample_featured })
                     .crossfade(true)
-                    .size(Size(512, 512)) // ✅ CRASH FIX
-                    .allowHardware(false) // ✅ CRASH FIX
                     .build(),
                 contentDescription = project.title,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(Color.LightGray),
-                contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.sample_featured)
+                contentScale = ContentScale.Crop
             )
-            Column(Modifier.padding(12.dp)) {
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = project.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -322,15 +421,28 @@ private fun FeaturedProjectCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = project.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Tags/Type
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = project.projectType,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
         }
     }

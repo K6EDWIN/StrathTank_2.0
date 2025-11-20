@@ -3,7 +3,6 @@ package com.example.strathtankalumni.data
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
-
 data class Collaboration(
     val id: String = "",
     val projectId: String = "",
@@ -19,4 +18,16 @@ data class Collaboration(
     val requestedAt: Date? = null,
     @ServerTimestamp
     val updatedAt: Date? = null
+)
+
+// ✅ ADDED: New Data Class for the Discussion Feature
+data class ProjectComment(
+    val id: String = "",
+    val projectId: String = "", // Links comment to the specific project
+    val userId: String = "",
+    val userName: String = "",
+    val userPhotoUrl: String? = null,
+    val text: String = "",
+    @ServerTimestamp
+    val timestamp: Date? = null
 )

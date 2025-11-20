@@ -4,14 +4,16 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,70 +24,52 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.navigation.NavHostController
-import androidx.compose.foundation.shape.CircleShape
-import coil.compose.AsyncImage
-import com.example.strathtankalumni.viewmodel.AuthViewModel
-import com.example.strathtankalumni.viewmodel.ProjectState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.strathtankalumni.R
 import coil.size.Size
+import com.example.strathtankalumni.R
+import com.example.strathtankalumni.viewmodel.AuthViewModel
+import com.example.strathtankalumni.viewmodel.ProjectState
 
-// ==========================================
-// 1. THE "EVERYTHING" LISTS
-// Finally expanded this so it's not just for CS majors.
-// ==========================================
-
-// The massive list of tags. Covering all bases from coding to eco projs.
+// --- DATA LISTS (Kept exactly as you had them) ---
 private val allTags = listOf(
-    // The nerdy stuff
     "AI", "Machine Learning", "Mobile", "Web", "DevOps", "Cybersecurity", "Blockchain", "IoT", "AR/VR", "Robotics", "SaaS",
-    // The good human stuff (Green Tech, NGOs)
     "Sustainability", "Renewable Energy", "Climate Action", "Circular Economy", "Waste Management", "Social Impact", "Community Dev", "Education", "Healthcare", "Poverty Alleviation",
-    // The money stuff
     "Fintech", "E-commerce", "B2B", "B2C", "Marketing", "Entrepreneurship", "Venture Capital", "Supply Chain",
-    // The artsy stuff
     "Design", "Media", "Journalism", "Architecture", "Fashion", "Research", "Policy"
 )
 
-// Project Types: Used to figure out what fields to show/hide later.
 private val PROJECT_TYPES = listOf(
-    // Hard Tech
     "Mobile App", "Web Platform", "AI/Data Science", "IoT/Hardware", "Game Development",
-    // Business & Social (No code required)
     "Business Venture/Startup", "Social Impact/NGO", "Eco-Friendly/Sustainability", "Fundraising/Charity",
-    // Misc
     "Creative Arts/Media", "Research/Academic", "Other"
 )
 
-// --- Tech Specific Lists (Only show these if it's a coding project) ---
 private val MobileAppLanguages = listOf("Kotlin", "Swift", "Dart (Flutter)", "JavaScript (React Native)", "Java")
 private val WebDevelopmentLanguages = listOf("JavaScript", "TypeScript", "Python", "Java", "PHP", "Go", "Ruby", "C#")
 private val DataScienceLanguages = listOf("Python", "R", "Julia", "SQL", "Scala")
 private val EmbeddedSystemsLanguages = listOf("C", "C++", "Assembly", "Rust", "Verilog")
-
 private val AllDatabases = listOf("Firestore", "Realtime DB", "PostgreSQL", "MySQL", "MongoDB", "SQLite", "Redis", "Supabase", "DynamoDB", "Oracle")
-
-// Combined list: Tech frameworks AND Business tools (Excel, Canva, etc.)
-// Because business students need tools too.
 private val AllToolsAndFrameworks = listOf(
-    // Mobile
     "Compose", "Flutter", "React Native", "SwiftUI", "XML",
-    // Web
     "React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js", "Laravel", ".NET", "Node.js",
-    // Data/AI
     "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "Keras", "Hadoop",
-    // Embedded
     "Arduino", "Raspberry Pi", "RTOS", "ESP32",
-    // Business/Design/Management (For the non-techies!)
     "Trello", "Jira", "Slack", "Notion", "Excel/Sheets", "Power BI", "Tableau",
     "Canva", "Figma", "Adobe XD", "Adobe Creative Cloud",
     "Shopify", "WordPress", "Wix", "Kickstarter", "GoFundMe", "Google Analytics"
@@ -101,37 +85,27 @@ fun AlumniAddProjectsPage(
     val projectState by authViewModel.projectState.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    // --- FORM STATE (Tracking all the user inputs) ---
+    // --- STATE ---
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var projectUrl by remember { mutableStateOf("") }
-    var githubUrl by remember { mutableStateOf("") } // Might change label if not tech
-    var projectType by remember { mutableStateOf("") } // The most important one, drives the UI
+    var githubUrl by remember { mutableStateOf("") }
+    var projectType by remember { mutableStateOf("") }
 
-    // File URIs
-    var imageUri by remember { mutableStateOf<Uri?>(null) } // Main cover
-    var mediaImageUris by remember { mutableStateOf(emptyList<Uri>()) } // Gallery
-    var pdfUri by remember { mutableStateOf<Uri?>(null) } // Documentation
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var mediaImageUris by remember { mutableStateOf(emptyList<Uri>()) }
+    var pdfUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Tag Collections
     var selectedCategories by remember { mutableStateOf(emptyList<String>()) }
-
-    // Tech/Tools Collections (These get filtered based on project type)
     var selectedLanguages by remember { mutableStateOf(emptyList<String>()) }
     var selectedDatabases by remember { mutableStateOf(emptyList<String>()) }
     var selectedTechStacks by remember { mutableStateOf(emptyList<String>()) }
 
-    // ==========================================
-    // 2. THE SMART LOGIC (Filtering)
-    // ==========================================
-
-    // Quick check: Is this a nerdy coding project?
-    // If FALSE, we hide the "Databases" and "Languages" sections to not scare business students.
+    // --- LOGIC (Filtering) ---
     val isTechProject = remember(projectType) {
         projectType in listOf("Mobile App", "Web Platform", "AI/Data Science", "IoT/Hardware", "Game Development")
     }
 
-    // Filter the languages list so we don't show "Swift" to a Web Developer.
     val availableLanguages = remember(projectType) {
         when (projectType) {
             "Mobile App" -> MobileAppLanguages
@@ -139,70 +113,46 @@ fun AlumniAddProjectsPage(
             "AI/Data Science" -> DataScienceLanguages
             "IoT/Hardware" -> EmbeddedSystemsLanguages
             "Game Development" -> listOf("C#", "C++", "Lua")
-            else -> emptyList() // Return empty if it's not a coding project
+            else -> emptyList()
         }.distinct().sorted()
     }
 
-    // Filter the Tools/Stacks.
-    // If it's a Charity project, show "Kickstarter" instead of "React".
     val availableToolsAndStacks = remember(projectType) {
         when (projectType) {
             "Mobile App" -> AllToolsAndFrameworks.filter { it in listOf("Compose", "Flutter", "React Native", "SwiftUI", "XML") }
             "Web Platform" -> AllToolsAndFrameworks.filter { it in listOf("React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js", "Laravel", ".NET", "Node.js") }
             "AI/Data Science" -> AllToolsAndFrameworks.filter { it in listOf("TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "Keras", "Hadoop", "Power BI", "Tableau") }
             "IoT/Hardware" -> AllToolsAndFrameworks.filter { it in listOf("Arduino", "Raspberry Pi", "RTOS", "ESP32") }
-
-            // The Non-Tech Logic
             "Business Venture/Startup", "E-Commerce" -> AllToolsAndFrameworks.filter { it in listOf("Shopify", "WordPress", "Excel/Sheets", "Power BI", "Google Analytics", "Trello", "Slack", "Notion") }
             "Social Impact/NGO", "Fundraising/Charity", "Eco-Friendly/Sustainability" -> AllToolsAndFrameworks.filter { it in listOf("Kickstarter", "GoFundMe", "Excel/Sheets", "Canva", "Trello", "Notion", "WordPress") }
             "Creative Arts/Media" -> AllToolsAndFrameworks.filter { it in listOf("Canva", "Figma", "Adobe XD", "Adobe Creative Cloud", "WordPress") }
-
-            else -> AllToolsAndFrameworks // Fallback: Show everything
+            else -> AllToolsAndFrameworks
         }.distinct().sorted()
     }
 
     val availableDatabases = remember { AllDatabases.sorted() }
 
-    // Reset the lists if the user changes their mind about Project Type
-    // (prevents having "Python" selected for a "Fashion" project)
     LaunchedEffect(projectType) {
         selectedLanguages = emptyList()
         selectedTechStacks = emptyList()
-        if (!isTechProject) selectedDatabases = emptyList() // Nuke the DBs if not tech
+        if (!isTechProject) selectedDatabases = emptyList()
     }
 
-    // --- BOILERPLATE LAUNCHERS (Don't touch) ---
-    val coverImagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> imageUri = uri }
-
-    val mediaImagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> -> mediaImageUris = mediaImageUris + uris }
-
-    val pdfFilePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        // Simple validation to make sure they actually picked a PDF
-        if (uri != null && context.contentResolver.getType(uri)?.startsWith("application/pdf") == true) {
-            pdfUri = uri
-        } else if (uri != null) {
-            Toast.makeText(context, "Yo, please select a valid PDF.", Toast.LENGTH_SHORT).show()
-        }
+    // --- LAUNCHERS ---
+    val coverImagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { imageUri = it }
+    val mediaImagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { mediaImageUris = mediaImageUris + it }
+    val pdfFilePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
+        if (it != null && context.contentResolver.getType(it)?.startsWith("application/pdf") == true) pdfUri = it
+        else if (it != null) Toast.makeText(context, "Please select a valid PDF.", Toast.LENGTH_SHORT).show()
     }
 
-    // --- HANDLE SAVE/UPLOAD RESULT ---
+    // --- RESULT HANDLING ---
     LaunchedEffect(projectState) {
         when (val state = projectState) {
             is ProjectState.Success -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
-                // Clear EVERYTHING so the next project starts fresh
-                title = ""; description = ""; projectUrl = ""; githubUrl = ""; projectType = ""
-                imageUri = null; mediaImageUris = emptyList(); pdfUri = null
-                selectedCategories = emptyList(); selectedLanguages = emptyList()
-                selectedDatabases = emptyList(); selectedTechStacks = emptyList()
                 authViewModel.resetProjectState()
-                navController.popBackStack() // Bye bye, go back to list
+                navController.popBackStack()
             }
             is ProjectState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
@@ -212,11 +162,11 @@ fun AlumniAddProjectsPage(
         }
     }
 
-    // --- UI START ---
+    // --- UI ---
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add New Project") },
+                title = { Text("New Project", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -226,239 +176,284 @@ fun AlumniAddProjectsPage(
             )
         },
         bottomBar = {
-            // The Big "Save" Button
-            Button(
-                onClick = {
-                    // Basic validation so we don't send empty junk to the DB
-                    if (title.isNotBlank() && description.isNotBlank() && projectType.isNotBlank()) {
-                        authViewModel.saveProject(
-                            title = title,
-                            description = description,
-                            projectUrl = projectUrl,
-                            githubUrl = githubUrl,
-                            projectType = projectType,
-                            imageUri = imageUri,
-                            mediaImageUris = mediaImageUris,
-                            pdfUri = pdfUri,
-                            categories = selectedCategories,
-                            programmingLanguages = selectedLanguages,
-                            databaseUsed = selectedDatabases,
-                            techStack = selectedTechStacks,
-                            onResult = {}
-                        )
-                    } else {
-                        Toast.makeText(context, "Missing info! We need at least a Title, Description, and Type.", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                enabled = projectState != ProjectState.Loading
+            // SAVE BUTTON
+            Surface(
+                shadowElevation = 8.dp,
+                color = Color.White
             ) {
-                if (projectState == ProjectState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text("SAVE PROJECT", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = {
+                        if (title.isNotBlank() && description.isNotBlank() && projectType.isNotBlank()) {
+                            authViewModel.saveProject(
+                                title, description, projectUrl, githubUrl, projectType,
+                                imageUri, mediaImageUris, pdfUri, selectedCategories,
+                                selectedLanguages, selectedDatabases, selectedTechStacks
+                            ) {}
+                        } else {
+                            Toast.makeText(context, "Please fill in Title, Description, and Type.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = projectState != ProjectState.Loading
+                ) {
+                    if (projectState == ProjectState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Publish Project", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
-        }
+        },
+        containerColor = Color(0xFFF9FAFB) // Light grey background
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()) // Make it scrollable because this form is huge
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- 1. Cover Image (Must have one) ---
-            Text("Project Cover Image (Required)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                        onClick = { coverImagePickerLauncher.launch("image/*") }
-                    ),
-                contentAlignment = Alignment.Center
+            // --- SECTION 1: MEDIA ---
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat look with border usually looks cleaner
             ) {
-                if (imageUri != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current).data(imageUri).crossfade(true).size(Size(1024, 1024)).allowHardware(false).build(),
-                        contentDescription = "Cover",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(id = R.drawable.sample_featured)
-                    )
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = Color.Gray)
-                        Text("Tap to select cover", color = Color.Gray)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
+                Column(Modifier.padding(16.dp)) {
+                    Text("Project Media", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
 
-            // --- 2. Gallery (The carousel) ---
-            Text("Gallery Images (Optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(mediaImageUris) { uri ->
-                    Box(modifier = Modifier.size(100.dp).clip(RoundedCornerShape(8.dp))) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current).data(uri).size(Size(256, 256)).allowHardware(false).build(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        // Little 'X' button to remove image
-                        IconButton(
-                            onClick = { mediaImageUris = mediaImageUris - uri },
-                            modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    // Cover Image Upload (Dashed Border Area)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF5F5F5))
+                            .dashedBorder(2.dp, Color.Gray, 12.dp)
+                            .clickable { coverImagePickerLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (imageUri != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current).data(imageUri).crossfade(true).build(),
+                                contentDescription = "Cover",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Change overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(12.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("Change Cover", color = Color.White, fontSize = 12.sp)
+                            }
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                                Spacer(Modifier.height(8.dp))
+                                Text("Add Cover Image", color = Color.Gray, fontWeight = FontWeight.Medium)
+                                Text("(Required)", color = Color.Red.copy(alpha = 0.6f), fontSize = 10.sp)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Gallery
+                    if (mediaImageUris.isNotEmpty()) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(mediaImageUris) { uri ->
+                                Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))) {
+                                    AsyncImage(model = uri, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                    IconButton(
+                                        onClick = { mediaImageUris = mediaImageUris - uri },
+                                        modifier = Modifier.align(Alignment.TopEnd).size(20.dp).background(Color.White, CircleShape).padding(2.dp)
+                                    ) { Icon(Icons.Default.Close, null, tint = Color.Black) }
+                                }
+                            }
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                        .clickable { mediaImagePickerLauncher.launch("image/*") },
+                                    contentAlignment = Alignment.Center
+                                ) { Icon(Icons.Default.Add, null, tint = Color.Gray) }
+                            }
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { mediaImagePickerLauncher.launch("image/*") },
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Collections, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Add Gallery Images")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // PDF
+                    if (pdfUri != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFF0F0), RoundedCornerShape(8.dp))
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, null, tint = Color.Red)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Document Attached", modifier = Modifier.weight(1f), color = Color.Black)
+                            IconButton(onClick = { pdfUri = null }) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                        }
+                    } else {
+                        TextButton(onClick = { pdfFilePickerLauncher.launch("application/pdf") }) {
+                            Icon(Icons.Default.AttachFile, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Attach Documentation (PDF)")
                         }
                     }
                 }
-                // Add button at the end of the list
-                item {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                            .clickable { mediaImagePickerLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray)
-                    }
-                }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- 3. PDF (For the academic types) ---
-            Text("Documentation (Optional PDF)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable { pdfFilePickerLauncher.launch("application/pdf") }
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (pdfUri != null) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.Red)
-                    Spacer(Modifier.width(8.dp))
-                    // Just parsing the filename roughly
-                    Text(pdfUri?.lastPathSegment?.substringAfterLast("/") ?: "PDF Selected", modifier = Modifier.weight(1f))
-                    IconButton(onClick = { pdfUri = null }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.Gray)
-                    }
-                } else {
-                    Icon(Icons.Default.AttachFile, contentDescription = null, tint = Color.Gray)
-                    Text(" Tap to attach PDF", color = Color.Gray)
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- 4. The Boring Text Inputs ---
-            OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Project Title *") }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description *") }, modifier = Modifier.fillMaxWidth().height(120.dp), minLines = 4)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(value = projectUrl, onValueChange = { projectUrl = it }, label = { Text("Project/Website URL") }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Smart Label: Change "GitHub" to "Source" if it's not a tech project
-            OutlinedTextField(value = githubUrl, onValueChange = { githubUrl = it }, label = { Text(if(isTechProject) "GitHub URL" else "Repository/Source URL") }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- 5. Project Type (The Trigger for Logic) ---
-            Text("Project Type *", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
+            // --- SECTION 2: DETAILS ---
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                PROJECT_TYPES.forEach { type ->
-                    val isSelected = projectType == type
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { projectType = if (isSelected) "" else type },
-                        label = { Text(type) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.White)
+                Column(Modifier.padding(16.dp)) {
+                    Text("Project Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(16.dp))
+
+                    FormTextField(value = title, onValueChange = { title = it }, label = "Project Title", icon = Icons.Default.Title)
+                    Spacer(Modifier.height(12.dp))
+
+                    FormTextField(value = description, onValueChange = { description = it }, label = "Description", icon = Icons.Default.Description, singleLine = false, minLines = 4)
+                    Spacer(Modifier.height(12.dp))
+
+                    FormTextField(value = projectUrl, onValueChange = { projectUrl = it }, label = "Live Link (Optional)", icon = Icons.Default.Link)
+                    Spacer(Modifier.height(12.dp))
+
+                    FormTextField(
+                        value = githubUrl,
+                        onValueChange = { githubUrl = it },
+                        label = if (isTechProject) "GitHub URL" else "Source URL",
+                        icon = Icons.Default.Code
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ==========================================
-            // 3. CONDITIONAL UI SECTIONS (The Magic)
-            // ==========================================
+            // --- SECTION 3: CATEGORY & TAGS ---
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Categorization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("This helps people find your project.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Spacer(Modifier.height(16.dp))
 
-            // SECTION A: Languages (Only if Tech)
-            if (isTechProject && availableLanguages.isNotEmpty()) {
-                Text("Programming Languages", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                TechSelectionRow(availableTags = availableLanguages, selectedTags = selectedLanguages, onTagToggle = { tag ->
-                    selectedLanguages = if (selectedLanguages.contains(tag)) selectedLanguages - tag else selectedLanguages + tag
-                })
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    Text("Project Type *", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    TechSelectionRow(PROJECT_TYPES, listOf(projectType)) { projectType = if (projectType == it) "" else it }
 
-            // SECTION B: Databases (Only if Tech)
-            if (isTechProject) {
-                Text("Databases", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                TechSelectionRow(availableTags = availableDatabases, selectedTags = selectedDatabases, onTagToggle = { tag ->
-                    selectedDatabases = if (selectedDatabases.contains(tag)) selectedDatabases - tag else selectedDatabases + tag
-                })
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    // --- Conditional Sections ---
 
-            // SECTION C: Tools & Frameworks (Dynamic Label!)
-            if (projectType.isNotBlank()) {
-                // If it's tech, call it "Tech Stack". If it's business, call it "Tools Used".
-                val label = if (isTechProject) "Tech Stack / Frameworks" else "Tools & Platforms Used"
-                val subLabel = if (isTechProject) "Frameworks used (e.g., React, Flutter)" else "Software or platforms used (e.g., Excel, Canva, Kickstarter)"
+                    // Languages
+                    if (isTechProject && availableLanguages.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+                        Spacer(Modifier.height(16.dp))
+                        Text("Languages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(8.dp))
+                        TechSelectionRow(availableLanguages, selectedLanguages) {
+                            selectedLanguages = if (selectedLanguages.contains(it)) selectedLanguages - it else selectedLanguages + it
+                        }
+                    }
 
-                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(subLabel, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                Spacer(modifier = Modifier.height(8.dp))
+                    // Tools / Tech Stack
+                    if (projectType.isNotBlank()) {
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+                        Spacer(Modifier.height(16.dp))
 
-                if (availableToolsAndStacks.isNotEmpty()) {
-                    TechSelectionRow(availableTags = availableToolsAndStacks, selectedTags = selectedTechStacks, onTagToggle = { tag ->
-                        selectedTechStacks = if (selectedTechStacks.contains(tag)) selectedTechStacks - tag else selectedTechStacks + tag
-                    })
-                } else {
-                    Text("No specific tools listed for this category, select general tags below.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        val label = if (isTechProject) "Tech Stack" else "Tools Used"
+                        Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(8.dp))
+
+                        if (availableToolsAndStacks.isNotEmpty()) {
+                            TechSelectionRow(availableToolsAndStacks, selectedTechStacks) {
+                                selectedTechStacks = if (selectedTechStacks.contains(it)) selectedTechStacks - it else selectedTechStacks + it
+                            }
+                        }
+                    }
+
+                    // General Tags
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+                    Spacer(Modifier.height(16.dp))
+                    Text("General Keywords", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    TechSelectionRow(allTags, selectedCategories) {
+                        selectedCategories = if (selectedCategories.contains(it)) selectedCategories - it else selectedCategories + it
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            // SECTION D: General Tags (For everyone)
-            Text("General Categories / Key Topics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Select keywords that describe your project.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Spacer(modifier = Modifier.height(8.dp))
-            TechSelectionRow(availableTags = allTags, selectedTags = selectedCategories, onTagToggle = { tag ->
-                selectedCategories = if (selectedCategories.contains(tag)) selectedCategories - tag else selectedCategories + tag
-            })
-
-            // Spacer so the floating button or bottom nav doesn't hide content
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
-// Helper Composable for the filter chips row
-// Keeping it clean here.
+// --- HELPER COMPONENTS ---
+
+@Composable
+fun FormTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    singleLine: Boolean = true,
+    minLines: Int = 1
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = Color.Gray) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor = Color.White
+        ),
+        singleLine = singleLine,
+        minLines = minLines
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TechSelectionRow(
@@ -481,11 +476,22 @@ fun TechSelectionRow(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = Color.White,
-                    containerColor = Color(0xFFEEEEEE),
-                    labelColor = Color(0xFF666666)
+                    containerColor = Color(0xFFF0F2F5), // Subtle grey
+                    labelColor = Color.Black
                 ),
-                shape = RoundedCornerShape(24.dp)
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = if(isSelected) Color.Transparent else Color.LightGray.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(8.dp)
             )
         }
     }
+}
+
+// Custom Modifier for Dashed Border
+fun Modifier.dashedBorder(strokeWidth: androidx.compose.ui.unit.Dp, color: Color, cornerRadiusDp: androidx.compose.ui.unit.Dp) = drawBehind {
+    val stroke = Stroke(width = strokeWidth.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))
+    drawRoundRect(color = color, style = stroke, cornerRadius = CornerRadius(cornerRadiusDp.toPx()))
 }
