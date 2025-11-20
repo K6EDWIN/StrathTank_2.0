@@ -21,12 +21,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign // ✅ --- IMPORT ADDED ---
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter.State.Empty.painter
 import coil.request.ImageRequest
 import coil.size.Size
 import com.example.strathtankalumni.R
@@ -40,7 +42,7 @@ import com.example.strathtankalumni.viewmodel.ProjectsListState
 @Composable
 fun AlumniHomeScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues,
+    paddingValues: PaddingValues, // This is from the MAIN Scaffold (with the navbar)
     authViewModel: AuthViewModel = viewModel()
 ) {
     val projectsState by authViewModel.allProjectsState.collectAsState()
@@ -69,14 +71,17 @@ fun AlumniHomeScreen(
     }
 
     Scaffold(
-        // ✅ --- TOP BAR REMOVED ---
-    ) { innerPadding ->
+        // --- THIS IS THE FIX ---
+        // Apply the main navbar padding from the outer Scaffold here
+        modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
+        // --- END OF FIX ---
+    ) { innerPadding -> // This is the padding from THIS Scaffold (which is 0dp)
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Use padding from Scaffold
-                .padding(bottom = paddingValues.calculateBottomPadding()), // Use padding from NavHost
-            contentPadding = PaddingValues(vertical = 16.dp)
+                .padding(innerPadding), // Use padding from THIS Scaffold
+            // --- FIX 2 & 3: Removed vertical padding ---
+            contentPadding = PaddingValues()
         ) {
 
             // --- Suggested Users Section ---
@@ -107,7 +112,9 @@ fun AlumniHomeScreen(
                     text = "Latest Projects",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    // --- FIX 1: Centered title ---
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(16.dp))
             }
@@ -126,12 +133,16 @@ fun AlumniHomeScreen(
             } else {
                 items(latestProjects, key = { it.id }) { project ->
                     // Re-using the ProjectCard from AlumniProjectsScreen.kt
-                    ProjectCard(
-                        project = project,
-                        onClick = {
-                            navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
-                        }
-                    )
+                    // Add horizontal padding to the card itself
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        ProjectCard(
+                            project = project,
+                            onClick = {
+                                navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
+                            }
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp)) // Add space between cards
                 }
             }
         }
@@ -152,7 +163,9 @@ private fun SuggestedUsersSection(
             text = "Suggested for you",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            // --- FIX 1: Centered title ---
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
         LazyRow(
@@ -250,7 +263,9 @@ private fun FeaturedProjectsSection(
             text = "Featured Projects",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            // --- FIX 1: Centered title ---
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
         LazyRow(

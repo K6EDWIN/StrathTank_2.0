@@ -1,4 +1,3 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniProfileScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.content.Intent
@@ -47,8 +46,8 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.ExperienceItem
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import androidx.compose.foundation.layout.ExperimentalLayoutApi // ✅ IMPORT
-import coil.size.Size // ✅ IMPORT
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import coil.size.Size
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -110,37 +109,30 @@ fun AlumniProfileScreen(
         )
     }
 
-    // --- EDIT: Added Box wrapper for loading spinner ---
     Box(modifier = Modifier.fillMaxSize()) {
         if (currentUser == null) {
-            // --- Show a centered spinner while loading ---
+            // Show a centered spinner while loading
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
-            // --- Once loaded, show profile content ---
+            // profile content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    // --- MODIFICATION 1: Apply ONLY bottom padding from Scaffold ---
-                    // This removes the unwanted top padding under the app bar.
                     .padding(bottom = paddingValues.calculateBottomPadding())
-                // --- MODIFICATION 2: Removed .padding(horizontal = 16.dp) from here ---
             ) {
 
-                // --- EDIT: Added new scrollable Column with .weight(1f) ---
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        // --- MODIFICATION 3: Added consolidated horizontal padding here ---
-                        // This will apply to ALL scrollable content.
                         .padding(horizontal = 16.dp)
                 ) {
 
-                    // --- 1. Centered Header Section ---
+                    // Header Section
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        // --- MODIFICATION 4: Removed .padding(horizontal = 16.dp) ---
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
@@ -160,7 +152,7 @@ fun AlumniProfileScreen(
                                     model = ImageRequest.Builder(context)
                                         .data(currentUser?.profilePhotoUrl)
                                         .crossfade(true)
-                                        .size(Size(256, 256)) // ✅ --- CRASH FIX ---
+                                        .size(Size(256, 256))
                                         .allowHardware(false)
                                         .build(),
                                     contentDescription = "Profile photo",
@@ -222,14 +214,12 @@ fun AlumniProfileScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // --- 2. Left-Aligned Content Section ---
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                        // --- MODIFICATION 4: Removed .padding(horizontal = 16.dp) ---
                     ) {
                         if (!isEditing) {
-                            // --- View Mode ---
                             ProfileSection("About", about)
 
                             Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -406,12 +396,14 @@ fun AlumniProfileScreen(
                                 )
                             }
                         }
+
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 32.dp)
-                                .heightIn(min = 200.dp), // Added height
-                            contentAlignment = Alignment.TopCenter // Changed
+                                .padding(top = 32.dp, bottom = 16.dp)
+                                .height(400.dp),
+                            contentAlignment = Alignment.TopCenter
                         ) {
                             when (tabIndex) {
                                 0 -> Text("No projects yet", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
@@ -421,12 +413,9 @@ fun AlumniProfileScreen(
                                 )
                             }
                         }
-
-                        // --- EDIT: Moved Logout Button out of this Column ---
                     }
-                } // --- EDIT: Closing brace for new .weight(1f) Column
+                }
 
-                // --- EDIT: Moved Logout Button here, to be pinned ---
                 Button(
                     onClick = {
                         authViewModel.signOut()
@@ -437,18 +426,17 @@ fun AlumniProfileScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        // --- MODIFICATION 5: Added horizontal padding to align with content ---
-                        .padding(horizontal = 16.dp) ,// Keep the top padding
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text("Logout", color = Color.White)
                 }
-            } // --- EDIT: Closing brace for Root Column
-        } // --- EDIT: Closing brace for "else"
-    } // --- EDIT: Closing brace for "Box"
+            }
+        }
+    }
 }
 
-// (ContactRow is unchanged)
+
 @Composable
 private fun ContactRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -480,7 +468,7 @@ private fun ContactRow(
     }
 }
 
-// (EditableSection is unchanged)
+
 @Composable
 private fun EditableSection(
     title: String,
@@ -498,13 +486,13 @@ private fun EditableSection(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 100.dp), // Give "About" more space
+                .heightIn(min = 100.dp), // about gets more space
         )
         Spacer(modifier = Modifier.height(12.dp))
     }
 }
 
-// (ProfileSection is unchanged)
+// profile
 @Composable
 private fun ProfileSection(
     title: String,
@@ -526,7 +514,6 @@ private fun ProfileSection(
     }
 }
 
-// (FlowRowLayout is unchanged)
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FlowRowLayout(
@@ -550,7 +537,6 @@ fun FlowRowLayout(
     }
 }
 
-// (ViewOnlyFlowRow is unchanged)
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ViewOnlyFlowRow(items: List<String>) {
@@ -571,7 +557,7 @@ private fun ViewOnlyFlowRow(items: List<String>) {
     }
 }
 
-// (ExperienceItemView is unchanged)
+
 @Composable
 private fun ExperienceItemView(item: ExperienceItem) {
     Row(
@@ -600,7 +586,7 @@ private fun ExperienceItemView(item: ExperienceItem) {
     }
 }
 
-// (ExperienceItemEditView is unchanged)
+
 @Composable
 private fun ExperienceItemEditView(
     item: ExperienceItem,
@@ -626,7 +612,7 @@ private fun ExperienceItemEditView(
     }
 }
 
-// (ExperienceEntryDialog is unchanged)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExperienceEntryDialog(

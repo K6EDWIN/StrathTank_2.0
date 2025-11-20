@@ -30,7 +30,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
-import com.example.strathtankalumni.data.MessagesViewModel
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 
@@ -60,65 +59,76 @@ fun AlumniMessagesScreen(
 
     val conversations by viewModel.conversations.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            // FIXED: Remove huge top padding, keep only bottom inset padding
-            .padding(bottom = paddingValues.calculateBottomPadding())
-            .padding(horizontal = 16.dp)
-    ) {
-        // Search bar at top with normal spacing
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("Search") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (conversations.isEmpty()) {
-            Box(
+    // --- EDIT: Added Box wrapper for loading spinner ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (currentUser == null) {
+            // --- Show a centered spinner while loading ---
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            // --- Once loaded, show content ---
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = paddingValues.calculateBottomPadding()),
-                contentAlignment = Alignment.Center
+                    .padding(bottom = paddingValues.calculateBottomPadding())
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(
-                    text = if (acceptedConnections.isEmpty())
-                        "You haven't made any connections yet.\nFind alumni to connect with."
-                    else
-                        "No messages yet.\nStart a chat with one of your connections!",
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                items(conversations) { convoWithUser ->
-                    val otherUser = convoWithUser.user
-                    val conversation = convoWithUser.conversation
+                // Search bar at top with normal spacing
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    ConversationRow(
-                        name = "${otherUser.firstName} ${otherUser.lastName}",
-                        lastMessage = conversation.lastMessage,
-                        timestamp = "now",
-                        photoUrl = otherUser.profilePhotoUrl,
-                        unreadCount = convoWithUser.unreadCount,
-                        onClick = {
-                            navController.navigate(
-                                Screen.DirectMessage.createRoute(
-                                    userName = "${otherUser.firstName} ${otherUser.lastName}",
-                                    otherUserId = otherUser.userId
-                                )
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    placeholder = { Text("Search") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(32.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (conversations.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (acceptedConnections.isEmpty())
+                                "You haven't made any connections yet.\nFind alumni to connect with."
+                            else
+                                "No messages yet.\nStart a chat with one of your connections!",
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        items(conversations) { convoWithUser ->
+                            val otherUser = convoWithUser.user
+                            val conversation = convoWithUser.conversation
+
+                            ConversationRow(
+                                name = "${otherUser.firstName} ${otherUser.lastName}",
+                                lastMessage = conversation.lastMessage,
+                                timestamp = "now",
+                                photoUrl = otherUser.profilePhotoUrl,
+                                unreadCount = convoWithUser.unreadCount,
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.DirectMessage.createRoute(
+                                            userName = "${otherUser.firstName} ${otherUser.lastName}",
+                                            otherUserId = otherUser.userId
+                                        )
+                                    )
+                                }
                             )
                         }
-                    )
+                    }
                 }
             }
         }

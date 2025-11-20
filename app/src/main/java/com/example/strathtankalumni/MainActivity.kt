@@ -9,7 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.strathtankalumni.navigation.AppNavHost
-import com.example.strathtankalumni.ui.theme.StrathTankAlumniTheme // Assume your theme file is here
+import com.example.strathtankalumni.ui.theme.StrathTankAlumniTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

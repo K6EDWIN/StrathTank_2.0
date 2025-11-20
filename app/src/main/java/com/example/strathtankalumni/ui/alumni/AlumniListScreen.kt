@@ -1,4 +1,3 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniListScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.background
@@ -30,7 +29,7 @@ import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import coil.size.Size // ✅ IMPORT
+import coil.size.Size
 
 @Composable
 fun AlumniListScreen(
@@ -96,7 +95,7 @@ fun AlumniItem(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null, // ✅ CHANGED: Was LocalIndication.current
+                indication = null,
                 onClick = onClick
             )
             .padding(vertical = 8.dp),

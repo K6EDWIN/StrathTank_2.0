@@ -84,14 +84,12 @@ fun AlumniProjectsScreen(
         }
     ) { innerPadding ->
 
-        // --- EDIT: Moved 'when' block to be the top-level content ---
-        // Dynamic content based on ProjectsListState
+       
         when (projectsState) {
             is ProjectsListState.Loading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        // --- EDIT: Added padding from Scaffold ---
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
@@ -102,7 +100,7 @@ fun AlumniProjectsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        // --- EDIT: Added padding from Scaffold ---
+
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
@@ -114,10 +112,9 @@ fun AlumniProjectsScreen(
                 }
             }
             is ProjectsListState.Success -> {
-                // --- EDIT: Moved all UI content inside the Success state ---
                 Column(
                     modifier = Modifier
-                        .padding(innerPadding) // Use padding from Scaffold
+                        .padding(innerPadding)
                         .fillMaxSize()
                         .padding(horizontal = 16.dp)
                 ) {
@@ -129,18 +126,17 @@ fun AlumniProjectsScreen(
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            // --- EDIT: Changed vertical: 8.dp to bottom: 8.dp ---
                             .padding(bottom = 8.dp),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Segmented Tabs for Filtering
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp) // Adjusted spacing
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         tabTitles.forEachIndexed { index, title ->
                             OutlinedButton(
@@ -159,7 +155,6 @@ fun AlumniProjectsScreen(
                                 } else {
                                     ButtonDefaults.outlinedButtonColors()
                                 },
-                                // Only add border to unselected buttons for a continuous look
                                 border = if (index != selectedTabIndex) ButtonDefaults.outlinedButtonBorder else null,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
                             ) {
@@ -236,7 +231,6 @@ fun AlumniProjectsScreen(
     }
 }
 
-// (Helper function is unchanged)
 private fun isProjectToday(project: Project): Boolean {
     val projectDate: Date? = project.createdAt
     if (projectDate == null) return false
@@ -248,10 +242,9 @@ private fun isProjectToday(project: Project): Boolean {
             projectCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)
 }
 
-// (ProjectCard is unchanged)
+
 @Composable
 fun ProjectCard(project: Project, onClick: () -> Unit) {
-    // Add clickable modifier to the outer Row
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -263,7 +256,6 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ✅ 3. THIS IS THE CRASH FIX
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(project.imageUrl.ifEmpty { R.drawable.sample_museum })
@@ -283,7 +275,7 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            // Display project title
+            // project title
             Text(
                 text = project.title,
                 fontWeight = FontWeight.Bold,
@@ -291,7 +283,7 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2
             )
-            // Display project description snippet
+            // project description
             Text(
                 text = project.description,
                 fontSize = 14.sp,
@@ -300,10 +292,9 @@ fun ProjectCard(project: Project, onClick: () -> Unit) {
             )
         }
     }
-    Divider(modifier = Modifier.padding(top = 8.dp)) // Add a divider for better separation
+    Divider(modifier = Modifier.padding(top = 8.dp))
 }
 
-// (AlumniProjectDetailScreen is unchanged)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniProjectDetailScreen(
@@ -336,10 +327,9 @@ fun AlumniProjectDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Apply padding from Scaffold
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            // 2. Handle state (Loading, Error, Success)
             when (val state = projectDetailState) {
                 is ProjectDetailState.Loading, ProjectDetailState.Idle -> {
                     CircularProgressIndicator()
@@ -348,8 +338,6 @@ fun AlumniProjectDetailScreen(
                     Text(text = "Error loading project: ${state.message}", color = MaterialTheme.colorScheme.error)
                 }
                 is ProjectDetailState.Success -> {
-                    // ✅ 4. THIS IS THE NAVIGATION FIX
-                    // Pass all required parameters to the real ProjectViewScreen
                     ProjectViewScreen(
                         project = state.project,
                         onBack = { navController.popBackStack() },

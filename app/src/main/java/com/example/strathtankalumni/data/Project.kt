@@ -38,10 +38,7 @@ data class Project(
     val createdAt: Date? = null,
     val likes: Int = 0,
     val commentCount: Int = 0,
-
-
     val isFeatured: Boolean = false,
-
     @get:PropertyName("liked")
     val isLiked: Boolean = false
 )

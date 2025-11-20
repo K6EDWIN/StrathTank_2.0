@@ -15,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,39 +31,64 @@ import androidx.compose.foundation.shape.CircleShape
 import coil.compose.AsyncImage
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectState
-import androidx.compose.foundation.lazy.LazyRow 
-import androidx.compose.foundation.lazy.items 
-import androidx.compose.ui.platform.LocalFocusManager 
-import androidx.compose.ui.res.painterResource 
-import androidx.compose.foundation.text.KeyboardActions 
-import androidx.compose.foundation.text.KeyboardOptions 
-import androidx.compose.ui.text.input.ImeAction 
-import coil.request.ImageRequest 
-import com.example.strathtankalumni.R 
-import coil.size.Size 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import coil.request.ImageRequest
+import com.example.strathtankalumni.R
+import coil.size.Size
 
-// List of available categories/tags
+// ==========================================
+// 1. THE "EVERYTHING" LISTS
+// Finally expanded this so it's not just for CS majors.
+// ==========================================
+
+// The massive list of tags. Covering all bases from coding to eco projs.
 private val allTags = listOf(
-    "AI", "Machine Learning", "Mobile", "Web", "DevOps", "Cybersecurity",
-    "Design", "Cloud", "Blockchain", "GameDev", "IoT", "AR/VR"
+    // The nerdy stuff
+    "AI", "Machine Learning", "Mobile", "Web", "DevOps", "Cybersecurity", "Blockchain", "IoT", "AR/VR", "Robotics", "SaaS",
+    // The good human stuff (Green Tech, NGOs)
+    "Sustainability", "Renewable Energy", "Climate Action", "Circular Economy", "Waste Management", "Social Impact", "Community Dev", "Education", "Healthcare", "Poverty Alleviation",
+    // The money stuff
+    "Fintech", "E-commerce", "B2B", "B2C", "Marketing", "Entrepreneurship", "Venture Capital", "Supply Chain",
+    // The artsy stuff
+    "Design", "Media", "Journalism", "Architecture", "Fashion", "Research", "Policy"
 )
 
-// List of available Project Types (used for filtering tech lists)
-private val PROJECT_TYPES = listOf("Mobile App", "Web Development", "Data Science", "Embedded Systems", "Other")
+// Project Types: Used to figure out what fields to show/hide later.
+private val PROJECT_TYPES = listOf(
+    // Hard Tech
+    "Mobile App", "Web Platform", "AI/Data Science", "IoT/Hardware", "Game Development",
+    // Business & Social (No code required)
+    "Business Venture/Startup", "Social Impact/NGO", "Eco-Friendly/Sustainability", "Fundraising/Charity",
+    // Misc
+    "Creative Arts/Media", "Research/Academic", "Other"
+)
 
-// Technology Lists categorized by Project Type
-private val MobileAppLanguages = listOf("Kotlin", "Swift", "Dart (Flutter)", "JavaScript (React Native)")
-private val WebDevelopmentLanguages = listOf("JavaScript", "TypeScript", "Python", "Java", "PHP", "Go")
-private val DataScienceLanguages = listOf("Python", "R", "Julia")
-private val EmbeddedSystemsLanguages = listOf("C", "C++", "Assembly")
+// --- Tech Specific Lists (Only show these if it's a coding project) ---
+private val MobileAppLanguages = listOf("Kotlin", "Swift", "Dart (Flutter)", "JavaScript (React Native)", "Java")
+private val WebDevelopmentLanguages = listOf("JavaScript", "TypeScript", "Python", "Java", "PHP", "Go", "Ruby", "C#")
+private val DataScienceLanguages = listOf("Python", "R", "Julia", "SQL", "Scala")
+private val EmbeddedSystemsLanguages = listOf("C", "C++", "Assembly", "Rust", "Verilog")
 
-private val AllDatabases = listOf("Firestore", "Realtime DB", "PostgreSQL", "MySQL", "MongoDB", "SQLite", "Redis")
-// Frameworks are filtered by Project Type to be more relevant
-private val AllTechStacks = listOf(
-    "Compose", "Flutter", "React Native", "SwiftUI", // Mobile
-    "React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js", // Web
-    "TensorFlow", "PyTorch", "Scikit-learn", // Data Science
-    "Arduino", "Raspberry Pi", "RTOS", // Embedded
+private val AllDatabases = listOf("Firestore", "Realtime DB", "PostgreSQL", "MySQL", "MongoDB", "SQLite", "Redis", "Supabase", "DynamoDB", "Oracle")
+
+// Combined list: Tech frameworks AND Business tools (Excel, Canva, etc.)
+// Because business students need tools too.
+private val AllToolsAndFrameworks = listOf(
+    // Mobile
+    "Compose", "Flutter", "React Native", "SwiftUI", "XML",
+    // Web
+    "React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js", "Laravel", ".NET", "Node.js",
+    // Data/AI
+    "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "Keras", "Hadoop",
+    // Embedded
+    "Arduino", "Raspberry Pi", "RTOS", "ESP32",
+    // Business/Design/Management (For the non-techies!)
+    "Trello", "Jira", "Slack", "Notion", "Excel/Sheets", "Power BI", "Tableau",
+    "Canva", "Figma", "Adobe XD", "Adobe Creative Cloud",
+    "Shopify", "WordPress", "Wix", "Kickstarter", "GoFundMe", "Google Analytics"
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -76,106 +101,108 @@ fun AlumniAddProjectsPage(
     val projectState by authViewModel.projectState.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    // State for project fields
+    // --- FORM STATE (Tracking all the user inputs) ---
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var projectUrl by remember { mutableStateOf("") }
-    var githubUrl by remember { mutableStateOf("") }
-    var projectType by remember { mutableStateOf("") }
+    var githubUrl by remember { mutableStateOf("") } // Might change label if not tech
+    var projectType by remember { mutableStateOf("") } // The most important one, drives the UI
 
-    var imageUri by remember { mutableStateOf<Uri?>(null) } // Main cover image
-    var mediaImageUris by remember { mutableStateOf(emptyList<Uri>()) } // NEW: Multiple media images
-    var pdfUri by remember { mutableStateOf<Uri?>(null) } // NEW: Single PDF file
+    // File URIs
+    var imageUri by remember { mutableStateOf<Uri?>(null) } // Main cover
+    var mediaImageUris by remember { mutableStateOf(emptyList<Uri>()) } // Gallery
+    var pdfUri by remember { mutableStateOf<Uri?>(null) } // Documentation
 
+    // Tag Collections
     var selectedCategories by remember { mutableStateOf(emptyList<String>()) }
 
-    // NEW STATE for Tech Selection
+    // Tech/Tools Collections (These get filtered based on project type)
     var selectedLanguages by remember { mutableStateOf(emptyList<String>()) }
     var selectedDatabases by remember { mutableStateOf(emptyList<String>()) }
     var selectedTechStacks by remember { mutableStateOf(emptyList<String>()) }
-    // END NEW STATE
 
-    // Dynamic Lists based on Project Type
+    // ==========================================
+    // 2. THE SMART LOGIC (Filtering)
+    // ==========================================
+
+    // Quick check: Is this a nerdy coding project?
+    // If FALSE, we hide the "Databases" and "Languages" sections to not scare business students.
+    val isTechProject = remember(projectType) {
+        projectType in listOf("Mobile App", "Web Platform", "AI/Data Science", "IoT/Hardware", "Game Development")
+    }
+
+    // Filter the languages list so we don't show "Swift" to a Web Developer.
     val availableLanguages = remember(projectType) {
         when (projectType) {
             "Mobile App" -> MobileAppLanguages
-            "Web Development" -> WebDevelopmentLanguages
-            "Data Science" -> DataScienceLanguages
-            "Embedded Systems" -> EmbeddedSystemsLanguages
-            else -> MobileAppLanguages + WebDevelopmentLanguages + DataScienceLanguages + EmbeddedSystemsLanguages
+            "Web Platform" -> WebDevelopmentLanguages
+            "AI/Data Science" -> DataScienceLanguages
+            "IoT/Hardware" -> EmbeddedSystemsLanguages
+            "Game Development" -> listOf("C#", "C++", "Lua")
+            else -> emptyList() // Return empty if it's not a coding project
         }.distinct().sorted()
     }
 
-    val availableTechStacks = remember(projectType) {
+    // Filter the Tools/Stacks.
+    // If it's a Charity project, show "Kickstarter" instead of "React".
+    val availableToolsAndStacks = remember(projectType) {
         when (projectType) {
-            "Mobile App" -> AllTechStacks.filter { it in listOf("Compose", "Flutter", "React Native", "SwiftUI") }
-            "Web Development" -> AllTechStacks.filter { it in listOf("React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js") }
-            "Data Science" -> AllTechStacks.filter { it in listOf("TensorFlow", "PyTorch", "Scikit-learn") }
-            "Embedded Systems" -> AllTechStacks.filter { it in listOf("Arduino", "Raspberry Pi", "RTOS") }
-            else -> AllTechStacks
+            "Mobile App" -> AllToolsAndFrameworks.filter { it in listOf("Compose", "Flutter", "React Native", "SwiftUI", "XML") }
+            "Web Platform" -> AllToolsAndFrameworks.filter { it in listOf("React", "Vue", "Angular", "Django", "Spring Boot", "Tailwind CSS", "Next.js", "Laravel", ".NET", "Node.js") }
+            "AI/Data Science" -> AllToolsAndFrameworks.filter { it in listOf("TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "Keras", "Hadoop", "Power BI", "Tableau") }
+            "IoT/Hardware" -> AllToolsAndFrameworks.filter { it in listOf("Arduino", "Raspberry Pi", "RTOS", "ESP32") }
+
+            // The Non-Tech Logic
+            "Business Venture/Startup", "E-Commerce" -> AllToolsAndFrameworks.filter { it in listOf("Shopify", "WordPress", "Excel/Sheets", "Power BI", "Google Analytics", "Trello", "Slack", "Notion") }
+            "Social Impact/NGO", "Fundraising/Charity", "Eco-Friendly/Sustainability" -> AllToolsAndFrameworks.filter { it in listOf("Kickstarter", "GoFundMe", "Excel/Sheets", "Canva", "Trello", "Notion", "WordPress") }
+            "Creative Arts/Media" -> AllToolsAndFrameworks.filter { it in listOf("Canva", "Figma", "Adobe XD", "Adobe Creative Cloud", "WordPress") }
+
+            else -> AllToolsAndFrameworks // Fallback: Show everything
         }.distinct().sorted()
     }
 
     val availableDatabases = remember { AllDatabases.sorted() }
 
-    // Reset languages/tech stacks if project type changes
+    // Reset the lists if the user changes their mind about Project Type
+    // (prevents having "Python" selected for a "Fashion" project)
     LaunchedEffect(projectType) {
-        selectedLanguages = selectedLanguages.filter { it in availableLanguages }
-        selectedTechStacks = selectedTechStacks.filter { it in availableTechStacks }
+        selectedLanguages = emptyList()
+        selectedTechStacks = emptyList()
+        if (!isTechProject) selectedDatabases = emptyList() // Nuke the DBs if not tech
     }
 
-
-    // --- LAUNCHERS FOR MEDIA (MODIFIED/NEW) ---
-
-    // 1. Main Cover Image (Single)
+    // --- BOILERPLATE LAUNCHERS (Don't touch) ---
     val coverImagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
+    ) { uri: Uri? -> imageUri = uri }
 
-    // 2. Project Media Images (Multiple)
     val mediaImagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
-        // Append new URIs to the existing list
-        mediaImageUris = mediaImageUris + uris
-    }
+    ) { uris: List<Uri> -> mediaImageUris = mediaImageUris + uris }
 
-    // 3. Project PDF (Single)
     val pdfFilePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        // We strictly enforce PDF here, although GetContent is generic
+        // Simple validation to make sure they actually picked a PDF
         if (uri != null && context.contentResolver.getType(uri)?.startsWith("application/pdf") == true) {
             pdfUri = uri
         } else if (uri != null) {
-            Toast.makeText(context, "Please select a valid PDF file.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Yo, please select a valid PDF.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // --- END LAUNCHERS ---
-
-
+    // --- HANDLE SAVE/UPLOAD RESULT ---
     LaunchedEffect(projectState) {
         when (val state = projectState) {
             is ProjectState.Success -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
-                // Clear fields and navigate back (or to projects screen)
-                title = ""
-                description = ""
-                projectUrl = ""
-                githubUrl = ""
-                projectType = ""
-                imageUri = null
-                mediaImageUris = emptyList() // Clear NEW field
-                pdfUri = null // Clear NEW field
-                selectedCategories = emptyList()
-                selectedLanguages = emptyList()
-                selectedDatabases = emptyList()
-                selectedTechStacks = emptyList()
+                // Clear EVERYTHING so the next project starts fresh
+                title = ""; description = ""; projectUrl = ""; githubUrl = ""; projectType = ""
+                imageUri = null; mediaImageUris = emptyList(); pdfUri = null
+                selectedCategories = emptyList(); selectedLanguages = emptyList()
+                selectedDatabases = emptyList(); selectedTechStacks = emptyList()
                 authViewModel.resetProjectState()
-                navController.popBackStack() // Go back to the previous screen (Projects list)
+                navController.popBackStack() // Bye bye, go back to list
             }
             is ProjectState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
@@ -185,6 +212,7 @@ fun AlumniAddProjectsPage(
         }
     }
 
+    // --- UI START ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -194,12 +222,14 @@ fun AlumniAddProjectsPage(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White) // ✅
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         bottomBar = {
+            // The Big "Save" Button
             Button(
                 onClick = {
+                    // Basic validation so we don't send empty junk to the DB
                     if (title.isNotBlank() && description.isNotBlank() && projectType.isNotBlank()) {
                         authViewModel.saveProject(
                             title = title,
@@ -208,29 +238,23 @@ fun AlumniAddProjectsPage(
                             githubUrl = githubUrl,
                             projectType = projectType,
                             imageUri = imageUri,
-                            mediaImageUris = mediaImageUris, // PASS NEW DATA
-                            pdfUri = pdfUri, // PASS NEW DATA
+                            mediaImageUris = mediaImageUris,
+                            pdfUri = pdfUri,
                             categories = selectedCategories,
                             programmingLanguages = selectedLanguages,
                             databaseUsed = selectedDatabases,
                             techStack = selectedTechStacks,
-                            onResult = {} // Handled by LaunchedEffect
+                            onResult = {}
                         )
                     } else {
-                        Toast.makeText(context, "Please fill in project title, description, and type.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Missing info! We need at least a Title, Description, and Type.", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 enabled = projectState != ProjectState.Loading
             ) {
                 if (projectState == ProjectState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
                     Text("SAVE PROJECT", fontWeight = FontWeight.Bold)
                 }
@@ -242,11 +266,11 @@ fun AlumniAddProjectsPage(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()) // Make it scrollable because this form is huge
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Project Cover Image Uploader ---
+            // --- 1. Cover Image (Must have one) ---
             Text("Project Cover Image (Required)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -263,176 +287,105 @@ fun AlumniAddProjectsPage(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
-                    // ✅ --- CRASH FIX 1 ---
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageUri)
-                            .crossfade(true)
-                            .size(Size(1024, 1024)) 
-                            .allowHardware(false) //
-                            .build(),
-                        contentDescription = "Project Cover Image",
+                        model = ImageRequest.Builder(LocalContext.current).data(imageUri).crossfade(true).size(Size(1024, 1024)).allowHardware(false).build(),
+                        contentDescription = "Cover",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         error = painterResource(id = R.drawable.sample_featured)
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = "Add Cover Photo", tint = Color.Gray)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Tap to select cover image", color = Color.Gray)
+                        Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = Color.Gray)
+                        Text("Tap to select cover", color = Color.Gray)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- NEW: Project Media Images (Gallery) ---
-            Text("Project Gallery Images (Optional, Multiple)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            // --- 2. Gallery (The carousel) ---
+            Text("Gallery Images (Optional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-
-            // ✅ Replaced FlowRow with LazyRow
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Display selected images
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(mediaImageUris) { uri ->
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    ) {
-                        // ✅ --- CRASH FIX 2 ---
+                    Box(modifier = Modifier.size(100.dp).clip(RoundedCornerShape(8.dp))) {
                         AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(uri)
-                                .crossfade(true)
-                                .size(Size(256, 256))
-                                .allowHardware(false)
-                                .build(),
-                            contentDescription = "Project Media",
+                            model = ImageRequest.Builder(LocalContext.current).data(uri).size(Size(256, 256)).allowHardware(false).build(),
+                            contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            error = painterResource(id = R.drawable.sample_featured)
+                            contentScale = ContentScale.Crop
                         )
-                        // Remove button
+                        // Little 'X' button to remove image
                         IconButton(
-                            onClick = {
-                                mediaImageUris = mediaImageUris - uri
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
+                            onClick = { mediaImageUris = mediaImageUris - uri },
+                            modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove Image", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
-
-                // Add button
+                // Add button at the end of the list
                 item {
                     Box(
                         modifier = Modifier
                             .size(100.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = LocalIndication.current,
-                                onClick = { mediaImagePickerLauncher.launch("image/*") }
-                            ),
+                            .clickable { mediaImagePickerLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Image", tint = Color.Gray)
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-
-            // --- NEW: Project Documentation (PDF) ---
-            Text("Project Documentation (Optional, PDF)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            // --- 3. PDF (For the academic types) ---
+            Text("Documentation (Optional PDF)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                        onClick = { pdfFilePickerLauncher.launch("application/pdf") }
-                    )
+                    .clickable { pdfFilePickerLauncher.launch("application/pdf") }
                     .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 if (pdfUri != null) {
-                    val fileName = pdfUri?.lastPathSegment?.substringAfterLast("/") ?: "Selected PDF"
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF Icon", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.Red)
                     Spacer(Modifier.width(8.dp))
-                    Text(fileName, modifier = Modifier.weight(1f))
-                    IconButton(
-                        onClick = { pdfUri = null },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove PDF", tint = Color.Gray)
+                    // Just parsing the filename roughly
+                    Text(pdfUri?.lastPathSegment?.substringAfterLast("/") ?: "PDF Selected", modifier = Modifier.weight(1f))
+                    IconButton(onClick = { pdfUri = null }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.Gray)
                     }
                 } else {
-                    Icon(Icons.Default.AttachFile, contentDescription = "Attach PDF", tint = Color.Gray)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Tap to select a single PDF file", color = Color.Gray, modifier = Modifier.weight(1f))
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.AttachFile, contentDescription = null, tint = Color.Gray)
+                    Text(" Tap to attach PDF", color = Color.Gray)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-
-            // Text Fields
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Project Title *") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // --- 4. The Boring Text Inputs ---
+            OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Project Title *") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description *") }, modifier = Modifier.fillMaxWidth().height(120.dp), minLines = 4)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = projectUrl, onValueChange = { projectUrl = it }, label = { Text("Project/Website URL") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description *") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                minLines = 4
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = projectUrl,
-                onValueChange = { projectUrl = it },
-                label = { Text("Live Demo URL (Optional)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = githubUrl,
-                onValueChange = { githubUrl = it },
-                label = { Text("GitHub URL (Optional)") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Smart Label: Change "GitHub" to "Source" if it's not a tech project
+            OutlinedTextField(value = githubUrl, onValueChange = { githubUrl = it }, label = { Text(if(isTechProject) "GitHub URL" else "Repository/Source URL") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(16.dp))
 
-
-            // Project Type Selection (Crucial for filtering below)
+            // --- 5. Project Type (The Trigger for Logic) ---
             Text("Project Type *", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp) // ✅
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 PROJECT_TYPES.forEach { type ->
                     val isSelected = projectType == type
@@ -440,123 +393,72 @@ fun AlumniAddProjectsPage(
                         selected = isSelected,
                         onClick = { projectType = if (isSelected) "" else type },
                         label = { Text(type) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFEEEEEE),
-                            labelColor = Color(0xFF666666)
-                        ),
-                        shape = RoundedCornerShape(24.dp)
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.White)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- NEW: Programming Languages Used Selection ---
-            Text("Programming Languages Used", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Select all that apply. (Options filtered by Project Type)",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            // ==========================================
+            // 3. CONDITIONAL UI SECTIONS (The Magic)
+            // ==========================================
 
-            if (projectType.isNotBlank()) {
-                TechSelectionRow(
-                    availableTags = availableLanguages,
-                    selectedTags = selectedLanguages,
-                    onTagToggle = { tag ->
-                        selectedLanguages = if (selectedLanguages.contains(tag)) {
-                            selectedLanguages - tag
-                        } else {
-                            selectedLanguages + tag
-                        }
-                    }
-                )
-            } else {
-                Text("Please select a Project Type above to see language options.", color = Color.Red.copy(alpha = 0.7f))
+            // SECTION A: Languages (Only if Tech)
+            if (isTechProject && availableLanguages.isNotEmpty()) {
+                Text("Programming Languages", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                TechSelectionRow(availableTags = availableLanguages, selectedTags = selectedLanguages, onTagToggle = { tag ->
+                    selectedLanguages = if (selectedLanguages.contains(tag)) selectedLanguages - tag else selectedLanguages + tag
+                })
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
-
-            // --- NEW: Database Used Selection (Universal) ---
-            Text("Database/Storage Used", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Select all that apply.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            TechSelectionRow(
-                availableTags = availableDatabases,
-                selectedTags = selectedDatabases,
-                onTagToggle = { tag ->
-                    selectedDatabases = if (selectedDatabases.contains(tag)) {
-                        selectedDatabases - tag
-                    } else {
-                        selectedDatabases + tag
-                    }
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-            // --- NEW: Tech Stack/Frameworks Used Selection ---
-            Text("Frameworks/Tech Stack", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Select all that apply. (Options filtered by Project Type)",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (projectType.isNotBlank()) {
-                TechSelectionRow(
-                    availableTags = availableTechStacks,
-                    selectedTags = selectedTechStacks,
-                    onTagToggle = { tag ->
-                        selectedTechStacks = if (selectedTechStacks.contains(tag)) {
-                            selectedTechStacks - tag
-                        } else {
-                            selectedTechStacks + tag
-                        }
-                    }
-                )
-            } else {
-                Text("Please select a Project Type above to see framework options.", color = Color.Red.copy(alpha = 0.7f))
+            // SECTION B: Databases (Only if Tech)
+            if (isTechProject) {
+                Text("Databases", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                TechSelectionRow(availableTags = availableDatabases, selectedTags = selectedDatabases, onTagToggle = { tag ->
+                    selectedDatabases = if (selectedDatabases.contains(tag)) selectedDatabases - tag else selectedDatabases + tag
+                })
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
+            // SECTION C: Tools & Frameworks (Dynamic Label!)
+            if (projectType.isNotBlank()) {
+                // If it's tech, call it "Tech Stack". If it's business, call it "Tools Used".
+                val label = if (isTechProject) "Tech Stack / Frameworks" else "Tools & Platforms Used"
+                val subLabel = if (isTechProject) "Frameworks used (e.g., React, Flutter)" else "Software or platforms used (e.g., Excel, Canva, Kickstarter)"
 
-            // --- EXISTING: General Project Categories/Tags ---
-            Text("General Project Categories/Tags", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Select all general tags that best describe your project.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(subLabel, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Spacer(modifier = Modifier.height(8.dp))
 
-            TechSelectionRow(
-                availableTags = allTags,
-                selectedTags = selectedCategories,
-                onTagToggle = { tag ->
-                    selectedCategories = if (selectedCategories.contains(tag)) {
-                        selectedCategories - tag
-                    } else {
-                        selectedCategories + tag
-                    }
+                if (availableToolsAndStacks.isNotEmpty()) {
+                    TechSelectionRow(availableTags = availableToolsAndStacks, selectedTags = selectedTechStacks, onTagToggle = { tag ->
+                        selectedTechStacks = if (selectedTechStacks.contains(tag)) selectedTechStacks - tag else selectedTechStacks + tag
+                    })
+                } else {
+                    Text("No specific tools listed for this category, select general tags below.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
-            )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-            Spacer(modifier = Modifier.height(100.dp)) // Space for the bottom button
+            // SECTION D: General Tags (For everyone)
+            Text("General Categories / Key Topics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Select keywords that describe your project.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            TechSelectionRow(availableTags = allTags, selectedTags = selectedCategories, onTagToggle = { tag ->
+                selectedCategories = if (selectedCategories.contains(tag)) selectedCategories - tag else selectedCategories + tag
+            })
+
+            // Spacer so the floating button or bottom nav doesn't hide content
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-/**
- * Reusable Composable for displaying and managing FilterChips.
- */
+// Helper Composable for the filter chips row
+// Keeping it clean here.
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TechSelectionRow(
@@ -567,7 +469,7 @@ fun TechSelectionRow(
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp) // ✅
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         availableTags.forEach { tag ->
             val isSelected = selectedTags.contains(tag)
@@ -575,21 +477,12 @@ fun TechSelectionRow(
                 selected = isSelected,
                 onClick = { onTagToggle(tag) },
                 label = { Text(tag) },
-                leadingIcon = if (isSelected) {
-                    {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else null,
+                leadingIcon = if (isSelected) { { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) } } else null,
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = Color.White,
-                    selectedLeadingIconColor = Color.White,
                     containerColor = Color(0xFFEEEEEE),
-                    labelColor = Color(0xFF666666) // ✅
+                    labelColor = Color(0xFF666666)
                 ),
                 shape = RoundedCornerShape(24.dp)
             )

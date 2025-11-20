@@ -4,15 +4,13 @@ import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
-// Defines the status of a connection for the UI
+// connection
 enum class ConnectionStatus {
     NONE, // No connection exists
     PENDING_SENT, // You sent a request
     PENDING_RECEIVED, // You received a request
     ACCEPTED
 }
-
-// Represents the document in your Firebase 'connections' collection
 data class Connection(
     @DocumentId
     val id: String = "",

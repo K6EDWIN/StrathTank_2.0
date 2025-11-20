@@ -15,27 +15,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
-import com.example.strathtankalumni.viewmodel.AuthViewModel // NEW IMPORT
+import com.example.strathtankalumni.viewmodel.AuthViewModel
 
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
 
 private sealed class ResetStage {
     object EMAIL_INPUT : ResetStage()
-    object CODE_SENT : ResetStage() // Success message stage
+    object CODE_SENT : ResetStage() // Success message
 }
 
 @Composable
 fun ForgotPasswordScreen(
     navController: NavHostController,
-    authViewModel: AuthViewModel // FIX: Added AuthViewModel parameter
+    authViewModel: AuthViewModel
 ) {
     val auth = FirebaseAuth.getInstance()
     val context = LocalContext.current
 
     var resetStage by remember { mutableStateOf<ResetStage>(ResetStage.EMAIL_INPUT) }
-
-    // Input state
     var email by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 

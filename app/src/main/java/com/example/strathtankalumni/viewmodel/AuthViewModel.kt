@@ -1,4 +1,3 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/viewmodel/AuthViewModel.kt
 package com.example.strathtankalumni.viewmodel
 import android.content.ContentResolver
 import kotlinx.coroutines.Dispatchers
@@ -9,8 +8,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.strathtankalumni.data.User
-// --- MERGED IMPORTS ---
-import com.example.strathtankalumni.data.ExperienceItem // Your ExperienceItem
+import com.example.strathtankalumni.data.ExperienceItem // ExperienceItem
 import com.example.strathtankalumni.data.Project // Ian's Project model
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -22,7 +20,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.PersonAdd
-// --- NEW COMMENT IMPORT ---
 import com.example.strathtankalumni.data.Comment
 import com.example.strathtankalumni.data.Collaboration
 import com.example.strathtankalumni.data.Connection
@@ -30,15 +27,11 @@ import com.example.strathtankalumni.ui.alumni.NotificationItemData
 import com.example.strathtankalumni.ui.alumni.NotificationType
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
-// import com.google.firebase.firestore.WriteBatch // Unused
-//import com.google.firebase.firestore.ktx.toObject
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect // Now used
 import kotlinx.coroutines.flow.combine
-// import java.util.Date // Unused
 import java.util.UUID
 
-// --- YOUR AUTH STATE ---
+// AUTH STATE
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
@@ -46,7 +39,7 @@ sealed class AuthState {
     data class Error(val message: String) : AuthState()
 }
 
-// --- IAN'S PROJECT STATES ---
+// IAN'S PROJECT STATES
 sealed class ProjectState {
     object Idle : ProjectState()
     object Loading : ProjectState()
@@ -66,7 +59,7 @@ sealed class ProjectDetailState {
     data class Success(val project: Project) : ProjectDetailState()
     data class Error(val message: String) : ProjectDetailState()
 }
-// --- END STATES ---
+
 
 
 class AuthViewModel : ViewModel() {
@@ -74,11 +67,9 @@ class AuthViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
-
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
-    // --- YOUR STATEFLOWS ---
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser
 
@@ -91,7 +82,7 @@ class AuthViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<NotificationItemData>>(emptyList())
     val notifications: StateFlow<List<NotificationItemData>> = _notifications
 
-    // --- IAN'S STATEFLOWS ---
+    // IAN'S STATEFLOWS
     private val _projectState = MutableStateFlow<ProjectState>(ProjectState.Idle)
     val projectState: StateFlow<ProjectState> = _projectState
 
@@ -101,14 +92,13 @@ class AuthViewModel : ViewModel() {
     private val _projectDetailState = MutableStateFlow<ProjectDetailState>(ProjectDetailState.Idle)
     val projectDetailState: StateFlow<ProjectDetailState> = _projectDetailState
 
-    // --- NEW COLLABORATION STATEFLOWS ---
     private val _collaborations = MutableStateFlow<List<Collaboration>>(emptyList())
     val collaborations: StateFlow<List<Collaboration>> = _collaborations
 
     private val _collaborationMembers = MutableStateFlow<List<User>>(emptyList())
     val collaborationMembers: StateFlow<List<User>> = _collaborationMembers
 
-    // --- NEW PROJECT COMMENT/ STATEFLOWS ---
+  //for comments
     private val _projectComments = MutableStateFlow<List<Comment>>(emptyList())
     val projectComments: StateFlow<List<Comment>> = _projectComments.asStateFlow()
 
@@ -118,15 +108,12 @@ class AuthViewModel : ViewModel() {
 
     init {
         loadCurrentUser()
-        //: Start all listeners
         loadConnections()
-        loadCollaborations() // NEW
+        loadCollaborations()
         fetchAllAlumni()
         observeNotifications()
-        // Note: fetchAllProjects() is called from the ProjectsScreen LaunchEffect
     }
 
-    // --- STATE RESET HELPERS ---
     fun resetAuthState() {
         _authState.value = AuthState.Idle
     }
@@ -139,13 +126,12 @@ class AuthViewModel : ViewModel() {
         _collaborationMembers.value = emptyList()
     }
 
-    // --- NEW: Clear comments ---
+    //Clear comments
     fun clearComments() {
         _projectComments.value = emptyList()
         Log.d("AuthViewModel", "Comments cleared.")
     }
 
-    // --- YOUR AUTH/USER FUNCTIONS ---
     // (registerUser, signIn, signOut)
     fun registerUser(user: User, password: String) {
         if (user.email.isBlank() || password.isBlank()) {
@@ -262,8 +248,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) VERSION OF updateUserProfile ---
-    // This is the correct one that uses List<ExperienceItem>
+   // for experience
     fun updateUserProfile(
         about: String,
         experience: List<ExperienceItem>,
@@ -278,13 +263,13 @@ class AuthViewModel : ViewModel() {
 
                 val updates = mapOf(
                     "about" to about,
-                    "experience" to experience, // This correctly passes the list
+                    "experience" to experience,
                     "skills" to skills,
                     "linkedinUrl" to linkedinUrl
                 )
 
                 docRef.set(updates, SetOptions.merge()).await()
-                fetchCurrentUser() // Refresh cached user data
+                fetchCurrentUser()
                 onResult(true)
 
             } catch (e: Exception) {
@@ -294,7 +279,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) uploadProfilePhoto FUNCTION ---
+    // upload dp
     fun uploadProfilePhoto(uri: Uri, contentResolver: ContentResolver, onResult: (Boolean) -> Unit) {
         val user = auth.currentUser
         if (user == null) {
@@ -314,14 +299,14 @@ class AuthViewModel : ViewModel() {
 
                 Log.d("AuthViewModel", "Starting upload to: ${storageRef.path} (uri=${uri})")
 
-                // Try putFile first
+
                 try {
                     storageRef.putFile(uri).await()
                     Log.d("AuthViewModel", "putFile succeeded for ${storageRef.path}")
                 } catch (putFileEx: Exception) {
                     Log.w("AuthViewModel", "putFile failed, trying putStream fallback: ${putFileEx.message}", putFileEx)
 
-                    // Fallback: open InputStream and use putStream
+
                     val stream = withContext(Dispatchers.IO) {
                         contentResolver.openInputStream(uri)
                     }
@@ -352,7 +337,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- YOUR (KYLE'S) ALUMNI/CONNECTION FUNCTIONS ---
+    // connection function
     fun fetchAllAlumni() {
         val currentUserId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
@@ -367,7 +352,7 @@ class AuthViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching alumni list", e)
-                _alumniList.value = emptyList() // Clear on error
+                _alumniList.value = emptyList()
             }
         }
     }
@@ -410,7 +395,7 @@ class AuthViewModel : ViewModel() {
         val connectionId = getConnectionId(myId, otherId)
 
         val newConnection = Connection(
-            id = connectionId, // Set the ID explicitly
+            id = connectionId,
             participantIds = listOf(myId, otherId),
             senderId = myId,
             status = "pending"
@@ -446,23 +431,21 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- **** CORRECTED FUNCTION **** ---
+
     private fun observeNotifications() {
         viewModelScope.launch {
             currentUser.collect { user ->
                 if (user == null) {
-                    _notifications.value = emptyList() // Clear notifications if user logs out
+                    _notifications.value = emptyList()
                     return@collect
                 }
 
                 val myId = user.userId
 
-                // Combine THREE flows: connections, collaborations, and the alumni list
+                // connections, collaborations, and the alumni list
                 connections.combine(collaborations) { connectionsList, collaborationsList ->
-                    // This is an intermediate combine just to group these two
                     Pair(connectionsList, collaborationsList)
                 }.combine(alumniList) { (connectionsList, collaborationsList), allAlumni ->
-                    // Now we have all three lists and will re-run if any of them change
                     val notificationList = mutableListOf<NotificationItemData>()
 
                     // 1. Connection Requests
@@ -470,7 +453,7 @@ class AuthViewModel : ViewModel() {
                         it.status == "pending" && it.senderId != myId
                     }
                     for (request in pendingRequests) {
-                        val sender = allAlumni.find { it.userId == request.senderId } // Use the fresh allAlumni list
+                        val sender = allAlumni.find { it.userId == request.senderId }
                         val senderName = sender?.let { "${it.firstName} ${it.lastName}" } ?: "An Alumnus"
                         notificationList.add(
                             NotificationItemData(
@@ -492,33 +475,27 @@ class AuthViewModel : ViewModel() {
                         notificationList.add(
                             NotificationItemData(
                                 id = collab.id,
-                                icon = Icons.Default.GroupAdd, // New icon
-                                title = collab.collaboratorName, // Name is on the object
+                                icon = Icons.Default.GroupAdd,
+                                title = collab.collaboratorName,
                                 subtitle = "Wants to join ${collab.projectTitle}",
                                 type = NotificationType.COLLABORATION_REQUEST,
-                                referenceId = collab.id // Pass the collab ID
+                                referenceId = collab.id
                             )
                         )
                     }
 
                     // TODO: Add NEW_MESSAGE notification logic here
 
-                    notificationList // Emit the final list
+                    notificationList
 
                 }.collect { combinedNotificationList ->
-                    // The collect block receives the list and assigns it to the StateFlow
-                    _notifications.value = combinedNotificationList.sortedBy { it.id } // Sort for consistency
+                    _notifications.value = combinedNotificationList.sortedBy { it.id }
                 }
             }
         }
     }
 
-    // --- NEW COLLABORATION FUNCTIONS ---
-
-    /**
-     * Listens to all collaboration documents where the current user
-     * is either the project owner or the collaborator.
-     */
+    // collab
     private fun loadCollaborations() {
         val uid = auth.currentUser?.uid ?: return
         viewModelScope.launch {
@@ -560,7 +537,7 @@ class AuthViewModel : ViewModel() {
         val myId = currentUser.userId
         val projectOwnerId = project.userId
 
-        if (myId == projectOwnerId) return // Can't collaborate on your own project
+        if (myId == projectOwnerId) return
 
         val collabId = "${project.id}_${myId}"
 
@@ -581,7 +558,7 @@ class AuthViewModel : ViewModel() {
             try {
                 firestore.collection("collaborations")
                     .document(collabId)
-                    .set(newCollaboration, SetOptions.merge()) // Use merge to be safe
+                    .set(newCollaboration, SetOptions.merge())
                     .await()
                 // UI will update automatically via the listener
             } catch (e: Exception) {
@@ -608,9 +585,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Fetches all members for a given collaboration (owner + accepted collaborators).
-     */
+
     fun getUsersForCollaboration(projectId: String, projectOwnerId: String) {
         viewModelScope.launch {
             try {
@@ -627,7 +602,7 @@ class AuthViewModel : ViewModel() {
                 val allMemberIds = (collaboratorIds + projectOwnerId).distinct()
 
                 // 3. Fetch user objects from the *current* alumni list and current user
-                val allAlumni = alumniList.value // Use the StateFlow's current value
+                val allAlumni = alumniList.value
                 val members = allAlumni.filter { it.userId in allMemberIds }
 
                 val ownerUser = allAlumni.find { it.userId == projectOwnerId }
@@ -645,7 +620,7 @@ class AuthViewModel : ViewModel() {
     }
 
 
-    // --- IAN'S PROJECT FUNCTIONS ---
+    // Ian's project  function
 
     private suspend fun uploadImage(imageUri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
         if (imageUri == null) return@withContext null
@@ -736,7 +711,6 @@ class AuthViewModel : ViewModel() {
                     techStack = techStack,
                     mediaImageUrls = mediaImageUrls,
                     pdfUrl = pdfUrl ?: ""
-                    // createdAt will be set by @ServerTimestamp
                 )
 
                 firestore.collection("projects").add(newProject).await()
@@ -801,7 +775,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- NEW: Project Like & Comment Functions ---
+    //comment and likes
 
     fun fetchCommentsForProject(projectId: String) {
         if (projectId.isBlank()) return
@@ -836,7 +810,7 @@ class AuthViewModel : ViewModel() {
             userId = user.userId,
             userName = "${user.firstName} ${user.lastName}",
             userPhotoUrl = user.profilePhotoUrl,
-            createdAt = null // Will be set by server
+            createdAt = null
         )
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -891,7 +865,7 @@ class AuthViewModel : ViewModel() {
                 if (_projectDetailState.value is ProjectDetailState.Success) {
                     val currentProject = (_projectDetailState.value as ProjectDetailState.Success).project
                     _projectDetailState.value = ProjectDetailState.Success(
-                        currentProject.copy(likes = newLikeCount.toInt()) // Update project with new count
+                        currentProject.copy(likes = newLikeCount.toInt())
                     )
                 }
 

@@ -59,7 +59,7 @@ fun RegistrationScreen(
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 // Navigate to login after successful registration
                 navController.navigate(Screen.Login.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true } // Clear back stack to welcome
+                    popUpTo(Screen.Welcome.route) { inclusive = true }
                 }
                 authViewModel.resetAuthState()
             }
@@ -75,7 +75,7 @@ fun RegistrationScreen(
         if (password != confirmPassword) {
             Toast.makeText(context, "Passwords do not match.", Toast.LENGTH_SHORT).show()
         } else {
-            // Check if essential fields are filled
+            // Check if fields are filled
             if (email.isBlank() || password.isBlank() || firstName.isBlank() || lastName.isBlank() || universityName.isBlank() || graduationYear.isBlank()) {
                 Toast.makeText(context, "Please fill in all fields.", Toast.LENGTH_LONG).show()
             }
@@ -90,8 +90,6 @@ fun RegistrationScreen(
                 graduationYear = graduationYear,
                 role = role
             )
-
-            // Call registerUser
             authViewModel.registerUser(newUser, password)
         }
     }

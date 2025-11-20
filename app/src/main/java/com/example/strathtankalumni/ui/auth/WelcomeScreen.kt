@@ -67,7 +67,7 @@ fun WelcomeScreen(navController: NavHostController) {
             )
         }
 
-        // --- Step 2: Loading Spinner ---
+        //spinner
         AnimatedVisibility(
             visible = showSpinner,
             enter = fadeIn(),
@@ -80,7 +80,7 @@ fun WelcomeScreen(navController: NavHostController) {
             )
         }
 
-        // --- Step 3: Main Content After Spinner ---
+        // Main Content After Spinner
         AnimatedVisibility(
             visible = !showLogo && !showSpinner,
             enter = fadeIn(),

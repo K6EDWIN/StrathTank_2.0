@@ -1,8 +1,5 @@
 package com.example.strathtankalumni.data
 
-// 🚀 1. IMPORT YOUR NEW DATA CLASS
-import com.example.strathtankalumni.data.ExperienceItem
-
 data class User(
     val userId: String = "",
     val firstName: String = "",
@@ -15,7 +12,6 @@ data class User(
     val graduationYear: String = "",
     val role: String = "alumni",
     val about: String = "",
-    // 🚀 2. THIS IS THE CHANGE
     val experience: List<ExperienceItem> = emptyList(),
     val skills: List<String> = emptyList(),
     val linkedinUrl: String = ""
@@ -33,7 +29,6 @@ data class User(
             "graduationYear" to graduationYear,
             "role" to role,
             "about" to about,
-            // 🚀 3. THIS IS THE CHANGE
             "experience" to experience,
             "skills" to skills,
             "profilePhotoUrl" to profilePhotoUrl,

@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.People
-// ✅ --- ADDED THIS IMPORT ---
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,7 +35,7 @@ fun AlumniNavLayout(
     mainNavController: NavHostController,
     navController: NavHostController,
     currentRoute: String?,
-    // 🚀 1. MODIFIED: Added mainNavController to the content lambda
+
     content: @Composable (NavHostController, NavHostController, PaddingValues) -> Unit
 ) {
     val title = when (currentRoute) {
@@ -79,7 +78,7 @@ fun AlumniNavLayout(
                                 )
                             }
 
-                            // ✅ --- ADDED "COLLABS" ICONBUTTON HERE ---
+
                             IconButton(onClick = {
                                 navController.navigate(Screen.AlumniCollaborations.route)
                             }) {
@@ -129,7 +128,6 @@ fun AlumniNavLayout(
             }
         }
     ) { paddingValues ->
-        // 🚀 2. MODIFIED: Passed mainNavController to the content lambda
         content(mainNavController, navController, paddingValues)
     }
 }

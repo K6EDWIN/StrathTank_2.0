@@ -1,9 +1,8 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/AlumniOtherProfilesScreen.kt
+
 package com.example.strathtankalumni.ui.alumni
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,11 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // Corrected import
-import androidx.compose.material.icons.filled.Business // Corrected import
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Message // Corrected import
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,13 +35,11 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.User
-import com.example.strathtankalumni.data.Connection
-// import com.example.strathtankalumni.data.ConnectionStatus // This enum doesn't exist, remove it
 import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import androidx.compose.foundation.layout.ExperimentalLayoutApi // ✅ IMPORT
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import com.example.strathtankalumni.data.ExperienceItem
-import coil.size.Size // ✅ IMPORT
+import coil.size.Size
 
 // This Project class is a local-only placeholder, which is fine.
 data class Project(

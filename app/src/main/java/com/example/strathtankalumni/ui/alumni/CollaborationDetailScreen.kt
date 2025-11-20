@@ -1,4 +1,3 @@
-// megre branch ]/StrathTank_2.0-merge/app/src/main/java/com/example/strathtankalumni/ui/alumni/CollaborationDetailScreen.kt
 package com.example.strathtankalumni.ui.alumni
 
 import android.widget.Toast
@@ -28,7 +27,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-import coil.size.Size // ✅ IMPORT
+import coil.size.Size
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +49,7 @@ fun CollaborationDetailScreen(
         if (collaboration != null) {
             authViewModel.getUsersForCollaboration(collaboration.projectId, collaboration.projectOwnerId)
         } else {
-            authViewModel.clearCollaborationMembers() // Clear list if collab is null
+            authViewModel.clearCollaborationMembers()
         }
     }
 
@@ -205,7 +204,7 @@ fun CollaborationDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
-                Spacer(Modifier.height(32.dp)) // Padding at the bottom
+                Spacer(Modifier.height(32.dp)) 
             }
         }
     }

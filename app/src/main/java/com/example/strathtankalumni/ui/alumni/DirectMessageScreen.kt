@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-// import androidx.compose.material.icons.filled.AccountCircle // No longer needed here
 import coil.size.Size
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -27,7 +26,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
-import com.example.strathtankalumni.data.MessagesViewModel
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 
 
@@ -40,22 +38,18 @@ fun DirectMessageScreen(
     viewModel: MessagesViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel()
 ) {
-    // This is correct
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
 
-    // --- THIS IS THE MODIFIED BLOCK ---
+
     LaunchedEffect(key1 = currentUserId, key2 = otherUserId) {
         if (currentUserId != null) {
-            // This line was already here
             viewModel.loadDirectMessages(currentUserId, otherUserId)
 
-            // 🚀 THIS IS THE NEW LINE YOU NEEDED
             // It resets the unread count to 0 when you open the chat
             viewModel.markAsRead(currentUserId, otherUserId)
         }
     }
-    // --- END OF MODIFICATION ---
 
     DisposableEffect(Unit) {
         onDispose {
@@ -71,10 +65,10 @@ fun DirectMessageScreen(
         conversations.find { it.user.userId == otherUserId }?.user
     }
 
-    // 1. Get OTHER user's photo URL
+    // 1. Get OTHER user's photo
     val otherUserPhotoUrl = otherUser?.profilePhotoUrl
 
-    // 2. Get CURRENT user's photo URL
+    // 2. Get CURRENT user's photo
     val currentUserPhotoUrl = currentUser?.profilePhotoUrl
 
     Column(
@@ -82,7 +76,6 @@ fun DirectMessageScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // This is correct
         CenterAlignedTopAppBar(
             title = { Text(userName, fontWeight = FontWeight.Bold) },
             navigationIcon = {
@@ -148,7 +141,6 @@ private fun MessageBubble(
         RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
     }
 
-    // Helper composable to avoid repeating the AsyncImage code
     @Composable
     fun ProfileImage(photoUrl: String?) {
         AsyncImage(
@@ -212,12 +204,11 @@ private fun MessageInput(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Replaced the hardcoded Icon with the AsyncImage
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(currentUserPhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
                 .crossfade(true)
-                .size(Size(128, 128)) // <-- ADD THIS
+                .size(Size(128, 128))
                 .allowHardware(false)
                 .build(),
             contentDescription = "Your profile picture",
