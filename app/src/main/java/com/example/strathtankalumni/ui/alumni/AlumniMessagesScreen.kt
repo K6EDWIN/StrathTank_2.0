@@ -2,7 +2,6 @@ package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,7 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import coil.size.Size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,194 +19,197 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.strathtankalumni.R
-import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import coil.size.Size
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlumniMessagesScreen(
     navController: NavHostController,
-    paddingValues: PaddingValues,
     viewModel: MessagesViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel()
 ) {
-    val currentUser by authViewModel.currentUser.collectAsState()
-    val currentUserId = currentUser?.userId
-
     val connections by authViewModel.connections.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
 
-    val acceptedConnections = remember(connections) {
-        connections.filter { it.status == "accepted" }
-    }
+    // 1. Collect search query and filtered list
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val conversations by viewModel.filteredConversations.collectAsState()
 
-    // load conversations based on accepted connections
-    LaunchedEffect(key1 = currentUserId, key2 = acceptedConnections) {
-        if (currentUserId != null) {
-            viewModel.loadConversations(currentUserId, acceptedConnections)
+    // Load conversations whenever connections or user changes
+    LaunchedEffect(connections, currentUser) {
+        val userId = currentUser?.userId
+        if (userId != null && connections.isNotEmpty()) {
+            // Filter for accepted connections first
+            val accepted = connections.filter { it.status == "accepted" }
+            viewModel.loadConversations(userId, accepted)
         }
     }
 
-    val conversations by viewModel.conversations.collectAsState()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Messages",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-    // --- EDIT: Added Box wrapper for loading spinner ---
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (currentUser == null) {
-            // --- Show a centered spinner while loading ---
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else {
-            // --- Once loaded, show content ---
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = paddingValues.calculateBottomPadding())
-                    .padding(horizontal = 16.dp)
+        // 2. Search Bar connected to ViewModel
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { viewModel.onSearchQueryChanged(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            placeholder = { Text("Search messages...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            ),
+            singleLine = true
+        )
+
+        if (conversations.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                // Search bar at top with normal spacing
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
-                    placeholder = { Text("Search") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp)
+                Text(
+                    text = if (searchQuery.isBlank()) "No conversations yet." else "No matching conversations.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (conversations.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (acceptedConnections.isEmpty())
-                                "You haven't made any connections yet.\nFind alumni to connect with."
-                            else
-                                "No messages yet.\nStart a chat with one of your connections!",
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        items(conversations) { convoWithUser ->
-                            val otherUser = convoWithUser.user
-                            val conversation = convoWithUser.conversation
-
-                            ConversationRow(
-                                name = "${otherUser.firstName} ${otherUser.lastName}",
-                                lastMessage = conversation.lastMessage,
-                                timestamp = "now",
-                                photoUrl = otherUser.profilePhotoUrl,
-                                unreadCount = convoWithUser.unreadCount,
-                                onClick = {
-                                    navController.navigate(
-                                        Screen.DirectMessage.createRoute(
-                                            userName = "${otherUser.firstName} ${otherUser.lastName}",
-                                            otherUserId = otherUser.userId
-                                        )
-                                    )
-                                }
-                            )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(conversations) { conversationWithUser ->
+                    ConversationItem(
+                        conversationWithUser = conversationWithUser,
+                        currentUserId = currentUser?.userId ?: "",
+                        onClick = {
+                            val otherUser = conversationWithUser.user
+                            // Navigate to chat: pass ID and Name
+                            navController.navigate("direct_message/${otherUser.userId}/${otherUser.firstName} ${otherUser.lastName}")
                         }
-                    }
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConversationRow(
-    name: String,
-    lastMessage: String,
-    timestamp: String,
-    photoUrl: String?,
-    unreadCount: Int,
+fun ConversationItem(
+    conversationWithUser: ConversationWithUser,
+    currentUserId: String,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
+    val user = conversationWithUser.user
+    val conversation = conversationWithUser.conversation
+    val isUnread = conversationWithUser.unreadCount > 0
 
-    Row(
+    // Determine text style based on read status
+    val fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal
+    val textColor = if (isUnread) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(photoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
-                .crossfade(true)
-                .size(Size(128, 128))
-                .allowHardware(false)
-                .build(),
-            contentDescription = "$name's profile picture",
+        Row(
             modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFF1F3F4)),
-            contentScale = ContentScale.Crop,
-            error = painterResource(id = R.drawable.noprofile)
-        )
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-            Text(
-                text = lastMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Spacer(Modifier.width(8.dp))
-
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = timestamp,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+            // Profile Image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(user.profilePhotoUrl.takeIf { !it.isNullOrBlank() } ?: R.drawable.noprofile)
+                    .crossfade(true)
+                    .size(Size(128, 128))
+                    .build(),
+                contentDescription = "${user.firstName}'s photo",
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray),
+                contentScale = ContentScale.Crop,
+                error = painterResource(id = R.drawable.noprofile)
             )
 
-            if (unreadCount > 0) {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "$unreadCount",
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        style = MaterialTheme.typography.labelSmall
+                        text = "${user.firstName} ${user.lastName}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
+
+                    // Timestamp
+                    val date = conversation.lastMessageTimestamp
+                    if (date != null) {
+                        val formattedTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
+                        Text(
+                            text = formattedTime,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (conversation.lastSenderId == currentUserId) "You: ${conversation.lastMessage}" else conversation.lastMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = fontWeight,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    if (isUnread) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = conversationWithUser.unreadCount.toString(),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 }
             }
         }

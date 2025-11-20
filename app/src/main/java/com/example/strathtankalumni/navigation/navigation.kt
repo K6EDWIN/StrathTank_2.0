@@ -168,7 +168,6 @@ fun AlumniGraph(mainNavController: NavHostController, authViewModel: AuthViewMod
             composable(Screen.AlumniMessages.route) {
                 AlumniMessagesScreen(
                     navController = mainNavController,
-                    paddingValues = paddingValues,
                     authViewModel = authViewModel
                 )
             }

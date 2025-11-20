@@ -9,15 +9,15 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ServerTimestamp
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.data.Connection
-
-
-
 
 data class Message(
     val id: String = "",
@@ -28,7 +28,6 @@ data class Message(
     val timestamp: Date? = null
 )
 
-
 data class Conversation(
     val id: String = "",
     val participants: List<String> = emptyList(),
@@ -36,7 +35,6 @@ data class Conversation(
     val lastSenderId: String = "",
     @ServerTimestamp
     val lastMessageTimestamp: Date? = null,
-
     // This map stores the unread count
     val unreadCount: Map<String, Long> = emptyMap()
 )
@@ -44,19 +42,37 @@ data class Conversation(
 data class ConversationWithUser(
     val conversation: Conversation,
     val user: User,
-
     // This holds the count for the current user
     val unreadCount: Int = 0
 )
-
 
 class MessagesViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
 
-    // (Inbox)
+    // (Inbox) - The raw list of conversations
     private val _conversations = MutableStateFlow<List<ConversationWithUser>>(emptyList())
     val conversations = _conversations.asStateFlow()
+
+    // Search Query State
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    // Filtered Conversations based on Search Query
+    val filteredConversations = combine(_conversations, _searchQuery) { convos, query ->
+        if (query.isBlank()) {
+            convos
+        } else {
+            convos.filter {
+                val fullName = "${it.user.firstName} ${it.user.lastName}"
+                fullName.contains(query, ignoreCase = true)
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // State for the messages within a single chat screen
     private val _directMessages = MutableStateFlow<List<Message>>(emptyList())
@@ -67,6 +83,9 @@ class MessagesViewModel : ViewModel() {
         return if (userId1 < userId2) "${userId1}_${userId2}" else "${userId2}_${userId1}"
     }
 
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+    }
 
     fun loadConversations(currentUserId: String, connections: List<Connection>) {
         viewModelScope.launch {
@@ -82,7 +101,10 @@ class MessagesViewModel : ViewModel() {
 
                         if (user != null) {
                             // 1. FETCH THE CHAT DOCUMENT ITSELF
-                            val chatId = connection.id // The connection ID is the chat ID
+                            // Ideally, Connection ID should match Chat ID.
+                            // If not, construct it using getChatId logic if you enforced that rule
+                            // but here we use connection.id as per your previous logic.
+                            val chatId = connection.id
                             val chatDoc = db.collection("chats").document(chatId).get().await()
                             val conversation = chatDoc.toObject(Conversation::class.java)
 
@@ -119,7 +141,6 @@ class MessagesViewModel : ViewModel() {
         }
     }
 
-
     fun loadDirectMessages(currentUserId: String, otherUserId: String) {
         val chatId = getChatId(currentUserId, otherUserId)
         db.collection("chats").document(chatId).collection("messages")
@@ -137,11 +158,9 @@ class MessagesViewModel : ViewModel() {
             }
     }
 
-
     fun clearDirectMessages() {
         _directMessages.value = emptyList()
     }
-
 
     fun markAsRead(currentUserId: String, otherUserId: String) {
         if (currentUserId.isBlank()) return
@@ -157,7 +176,6 @@ class MessagesViewModel : ViewModel() {
             }
     }
 
-
     fun sendMessage(text: String, senderId: String, receiverId: String) {
         viewModelScope.launch {
             val chatId = getChatId(senderId, receiverId)
@@ -169,7 +187,6 @@ class MessagesViewModel : ViewModel() {
                 timestamp = null
             )
 
-
             val batch = db.batch()
 
             // 1. Add the new message to the subcollection
@@ -180,9 +197,6 @@ class MessagesViewModel : ViewModel() {
             // 2. Update the main conversation document
             val chatDocRef = db.collection("chats").document(chatId)
 
-
-
-
             val conversationSummaryUpdate = mapOf(
                 "participants" to listOf(senderId, receiverId),
                 "lastMessage" to text,
@@ -192,10 +206,8 @@ class MessagesViewModel : ViewModel() {
 
             batch.set(chatDocRef, conversationSummaryUpdate, SetOptions.merge())
 
-
             val unreadIncrementKey = "unreadCount.$receiverId"
             batch.update(chatDocRef, unreadIncrementKey, FieldValue.increment(1))
-
 
             try {
                 batch.commit().await()
