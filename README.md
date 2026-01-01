@@ -57,34 +57,5 @@ We organize our code using **MVVM (Model-View-ViewModel)**.
 
 ---
 
-## 4. 🚀 How to Run It
-
-### Prerequisites
-* **Android Studio** (Giraffe or newer recommended)
-* **JDK 17** or higher
-* A working **Android Emulator** or a physical device.
-
-### Setup Instructions
-
-1.  **Clone the Repository**
-    ```bash
-    git clone [https://github.com/yourusername/StrathTank-2.0.git](https://github.com/yourusername/StrathTank-2.0.git)
-    cd StrathTank_2.0
-    ```
-
-2.  **Open in Android Studio**
-    * Launch Android Studio.
-    * Select **"Open"** and navigate to the project folder.
-    * Let Gradle sync (it creates the necessary build files).
-
-3.  **Configure Firebase**
-    * Ensure the `google-services.json` file is present in the `app/` directory. This connects the app to the database.
-
-4.  **Run the App**
-    * Click the green **Run** button (▶️) in the top toolbar.
-    * Select your emulator or connected device.
-
----
-
-## 5. ⚠️ Disclaimer
+## 4. ⚠️ Disclaimer
 **To the Innovator:** This platform connects you, but **you** are the captain of your project. While we provide the tools for collaboration, always ensure you have clear agreements when partnering with others. Happy innovating!
