@@ -14,8 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.google.firebase.auth.FirebaseAuth
+import com.example.strathtankalumni.util.Supabase
 import com.example.strathtankalumni.viewmodel.AuthViewModel
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.launch
 
 private val PrimaryBlue = Color(0xFF1976D2)
 private val DarkText = Color(0xFF212121)
@@ -30,8 +32,9 @@ fun ForgotPasswordScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel
 ) {
-    val auth = FirebaseAuth.getInstance()
     val context = LocalContext.current
+    // ✅ ADDED: Coroutine scope for Supabase suspend functions
+    val scope = rememberCoroutineScope()
 
     var resetStage by remember { mutableStateOf<ResetStage>(ResetStage.EMAIL_INPUT) }
     var email by remember { mutableStateOf("") }
@@ -40,27 +43,32 @@ fun ForgotPasswordScreen(
     val sendResetEmail: () -> Unit = {
         if (email.isNotBlank()) {
             isLoading = true
-            auth.sendPasswordResetEmail(email.trim())
-                .addOnCompleteListener { task ->
+            // ✅ CHANGED: Using Coroutine instead of addOnCompleteListener
+            scope.launch {
+                try {
+                    Supabase.client.auth.resetPasswordForEmail(
+                        email = email.trim(),
+                        redirectUrl = "strathtank://login")
+
                     isLoading = false
-                    if (task.isSuccessful) {
-                        // Success toast for first send or resend
-                        val message = if (resetStage == ResetStage.EMAIL_INPUT) {
-                            "Reset link sent to $email. Check your inbox."
-                        } else {
-                            "Reset link re-sent."
-                        }
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                        resetStage = ResetStage.CODE_SENT
+                    val message = if (resetStage == ResetStage.EMAIL_INPUT) {
+                        "Reset link sent to $email. Check your inbox."
                     } else {
-                        Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        "Reset link re-sent."
                     }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    resetStage = ResetStage.CODE_SENT
+
+                } catch (e: Exception) {
+                    isLoading = false
+                    // ✅ CHANGED: Standard Exception handling
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
+            }
         } else {
             Toast.makeText(context, "Please enter your email.", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     Column(
         modifier = Modifier

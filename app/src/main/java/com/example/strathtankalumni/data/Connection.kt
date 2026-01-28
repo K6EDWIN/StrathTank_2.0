@@ -1,8 +1,7 @@
 package com.example.strathtankalumni.data
 
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.ServerTimestamp
-import java.util.Date
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 // connection
 enum class ConnectionStatus {
@@ -11,12 +10,20 @@ enum class ConnectionStatus {
     PENDING_RECEIVED, // You received a request
     ACCEPTED
 }
+
+@Serializable
 data class Connection(
-    @DocumentId
     val id: String = "",
+
+    @SerialName("participant_ids")
     val participantIds: List<String> = emptyList(),
+
+    @SerialName("sender_id")
     val senderId: String = "", // The ID of the user who sent the request
+
     val status: String = "pending", // "pending", "accepted", "declined"
-    @ServerTimestamp
-    val lastUpdated: Date? = null
+
+    // ✅ CHANGED: Supabase returns timestamps as ISO 8601 Strings
+    @SerialName("last_updated")
+    val lastUpdated: String? = null
 )

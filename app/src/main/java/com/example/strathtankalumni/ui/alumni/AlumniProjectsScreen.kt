@@ -2,11 +2,9 @@ package com.example.strathtankalumni.ui.alumni
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -27,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -38,8 +34,9 @@ import com.example.strathtankalumni.navigation.Screen
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectDetailState
 import com.example.strathtankalumni.viewmodel.ProjectsListState
+import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -163,11 +160,13 @@ fun AlumniProjectsScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(filteredProjects, key = { it.id }) { project ->
+                            // ✅ FIX 1: Provide safe key fallback
+                            items(filteredProjects, key = { it.id ?: "proj_${it.hashCode()}" }) { project ->
                                 AlumniProjectItemCard(
                                     project = project,
                                     onClick = {
-                                        navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
+                                        // ✅ FIX 2: Provide safe string for navigation
+                                        navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id ?: ""))
                                     }
                                 )
                             }
@@ -304,10 +303,21 @@ fun EmptyProjectState(tabIndex: Int, query: String, isLoggedIn: Boolean) {
 
 // --- UTILS ---
 private fun isProjectToday(project: Project): Boolean {
-    val projectDate: Date? = project.createdAt
-    if (projectDate == null) return false
+    // ✅ FIX 3: Parse ISO String to Date
+    val dateString = project.createdAt ?: return false
+
+    // Supabase often sends: "2023-10-25T14:30:00.123456" or "2023-10-25T14:30:00+00:00"
+    // We try a flexible parser or standard ISO format
+    val projectDate = try {
+        // Try parsing ISO 8601
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(dateString)
+    } catch (e: Exception) {
+        null
+    } ?: return false
+
     val projectCalendar = Calendar.getInstance().apply { time = projectDate }
     val todayCalendar = Calendar.getInstance()
+
     return projectCalendar.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR) &&
             projectCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR)
 }

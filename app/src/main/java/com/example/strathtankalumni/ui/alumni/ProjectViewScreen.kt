@@ -73,7 +73,8 @@ fun ProjectViewScreen(
 
     // Fetch comments on load
     LaunchedEffect(project.id) {
-        authViewModel.fetchCommentsForProject(project.id)
+        // ✅ FIX: Safe call for nullable ID
+        authViewModel.fetchCommentsForProject(project.id ?: "")
     }
 
     // Cleanup comments on exit
@@ -93,12 +94,11 @@ fun ProjectViewScreen(
         }
     }
 
-    // ✅ FIX: Removed Scaffold/TopAppBar.
     // This is now a pure content screen that fits inside the parent's Scaffold.
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // Ensure background is white
+            .background(Color.White)
             .verticalScroll(scrollState)
             .padding(horizontal = 16.dp)
     ) {
@@ -150,7 +150,10 @@ fun ProjectViewScreen(
             modifier = Modifier.padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { authViewModel.toggleProjectLike(project.id, isLiked) }) {
+            IconButton(onClick = {
+                // ✅ FIX: Safe call for nullable ID
+                authViewModel.toggleProjectLike(project.id ?: "", isLiked)
+            }) {
                 Icon(
                     if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     "Like",
@@ -237,8 +240,6 @@ fun ProjectViewScreen(
         if (project.pdfUrl.isNotBlank()) {
             Text("Documentation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
-
-            // [Image of PDF icon]
 
             Card(
                 modifier = Modifier
@@ -348,7 +349,8 @@ fun ProjectViewScreen(
         // 10. COMMENTS
         HorizontalDivider(thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.3f))
         Spacer(Modifier.height(20.dp))
-        CommentSection(project.id, comments, authViewModel, currentUser?.profilePhotoUrl)
+        // ✅ FIX: Safe call for nullable ID
+        CommentSection(project.id ?: "", comments, authViewModel, currentUser?.profilePhotoUrl)
         Spacer(Modifier.height(60.dp)) // Extra space at bottom
     }
 }
@@ -447,9 +449,23 @@ private fun CommentItem(comment: Comment) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(comment.userName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Spacer(Modifier.width(8.dp))
-                val date = comment.createdAt ?: Date()
+
+                // ✅ FIX: Parse ISO string to Date
+                val dateString = comment.createdAt
+                val formattedDate = if (dateString != null) {
+                    try {
+                        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                        val date = parser.parse(dateString)
+                        SimpleDateFormat("MMM d", Locale.getDefault()).format(date ?: Date())
+                    } catch (e: Exception) {
+                        "Just now"
+                    }
+                } else {
+                    "Just now"
+                }
+
                 Text(
-                    SimpleDateFormat("MMM d", Locale.getDefault()).format(date),
+                    formattedDate,
                     color = Color.Gray,
                     fontSize = 12.sp
                 )

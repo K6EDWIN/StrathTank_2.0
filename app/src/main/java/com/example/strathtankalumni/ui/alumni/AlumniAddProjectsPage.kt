@@ -4,11 +4,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -33,20 +31,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.size.Size
-import com.example.strathtankalumni.R
 import com.example.strathtankalumni.viewmodel.AuthViewModel
 import com.example.strathtankalumni.viewmodel.ProjectState
 
-// --- DATA LISTS (Kept exactly as you had them) ---
+// --- DATA LISTS ---
 private val allTags = listOf(
     "AI", "Machine Learning", "Mobile", "Web", "DevOps", "Cybersecurity", "Blockchain", "IoT", "AR/VR", "Robotics", "SaaS",
     "Sustainability", "Renewable Energy", "Climate Action", "Circular Economy", "Waste Management", "Social Impact", "Community Dev", "Education", "Healthcare", "Poverty Alleviation",
@@ -187,7 +181,8 @@ fun AlumniAddProjectsPage(
                             authViewModel.saveProject(
                                 title, description, projectUrl, githubUrl, projectType,
                                 imageUri, mediaImageUris, pdfUri, selectedCategories,
-                                selectedLanguages, selectedDatabases, selectedTechStacks
+                                selectedLanguages, selectedDatabases, selectedTechStacks,
+                                context.contentResolver // ✅ FIX: Added contentResolver here
                             ) {}
                         } else {
                             Toast.makeText(context, "Please fill in Title, Description, and Type.", Toast.LENGTH_SHORT).show()
@@ -208,7 +203,7 @@ fun AlumniAddProjectsPage(
                 }
             }
         },
-        containerColor = Color(0xFFF9FAFB) // Light grey background
+        containerColor = Color(0xFFF9FAFB)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -222,13 +217,13 @@ fun AlumniAddProjectsPage(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat look with border usually looks cleaner
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Project Media", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Cover Image Upload (Dashed Border Area)
+                    // Cover Image Upload
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -246,7 +241,6 @@ fun AlumniAddProjectsPage(
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
-                            // Change overlay
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -378,8 +372,6 @@ fun AlumniAddProjectsPage(
                     TechSelectionRow(PROJECT_TYPES, listOf(projectType)) { projectType = if (projectType == it) "" else it }
 
                     // --- Conditional Sections ---
-
-                    // Languages
                     if (isTechProject && availableLanguages.isNotEmpty()) {
                         Spacer(Modifier.height(16.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
@@ -391,7 +383,6 @@ fun AlumniAddProjectsPage(
                         }
                     }
 
-                    // Tools / Tech Stack
                     if (projectType.isNotBlank()) {
                         Spacer(Modifier.height(16.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
@@ -408,7 +399,6 @@ fun AlumniAddProjectsPage(
                         }
                     }
 
-                    // General Tags
                     Spacer(Modifier.height(16.dp))
                     HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
                     Spacer(Modifier.height(16.dp))
@@ -425,7 +415,6 @@ fun AlumniAddProjectsPage(
 }
 
 // --- HELPER COMPONENTS ---
-
 @Composable
 fun FormTextField(
     value: String,
@@ -476,7 +465,7 @@ fun TechSelectionRow(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = Color.White,
-                    containerColor = Color(0xFFF0F2F5), // Subtle grey
+                    containerColor = Color(0xFFF0F2F5),
                     labelColor = Color.Black
                 ),
                 border = FilterChipDefaults.filterChipBorder(
@@ -490,7 +479,6 @@ fun TechSelectionRow(
     }
 }
 
-// Custom Modifier for Dashed Border
 fun Modifier.dashedBorder(strokeWidth: androidx.compose.ui.unit.Dp, color: Color, cornerRadiusDp: androidx.compose.ui.unit.Dp) = drawBehind {
     val stroke = Stroke(width = strokeWidth.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))
     drawRoundRect(color = color, style = stroke, cornerRadius = CornerRadius(cornerRadiusDp.toPx()))

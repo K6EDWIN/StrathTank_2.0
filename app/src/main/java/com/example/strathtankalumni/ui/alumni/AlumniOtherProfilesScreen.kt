@@ -171,8 +171,8 @@ fun OtherUserProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     val classMajorText = buildString {
-                        if (userData.graduationYear.isNotBlank()) append("Class of ${userData.graduationYear}")
-                        if (userData.degree.isNotBlank()) {
+                        if (userData.graduationYear?.isNotBlank() == true) append("Class of ${userData.graduationYear}")
+                        if (userData.degree?.isNotBlank() == true) {
                             if (this.isNotEmpty()) append(" • ")
                             append(userData.degree)
                         }
@@ -184,7 +184,7 @@ fun OtherUserProfileScreen(
                         fontSize = 14.sp
                     )
 
-                    if(userData.country.isNotBlank()) {
+                    if(userData.country?.isNotBlank() == true) {
                         Text(
                             text = userData.country,
                             color = Color.Gray,
@@ -269,10 +269,9 @@ fun OtherUserProfileScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
 
                     SectionCard {
-                        ProfileSection("About", userData.about.takeIf { !it.isNullOrBlank() } ?: "No bio available.")
+                        ProfileSection("About", userData.about?.takeIf { it.isNotBlank() } ?: "No bio available.")
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-
                     SectionCard {
                         Text("Experience", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Spacer(modifier = Modifier.height(12.dp))
@@ -340,11 +339,10 @@ fun OtherUserProfileScreen(
                         }
                     } else {
                         userProjects.forEach { project ->
-                            // ✅ FIX: Using Unique Name "UserProfileProjectCard"
                             UserProfileProjectCard(
                                 project = project,
                                 onClick = {
-                                    navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
+                                    navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id ?: ""))
                                 }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -425,7 +423,6 @@ private fun ExperienceItemView(item: ExperienceItem) {
     }
 }
 
-// ✅ FIX: Renamed Component to avoid "Conflicting Overloads"
 @Composable
 private fun UserProfileProjectCard(project: Project, onClick: () -> Unit) {
     ElevatedCard(
