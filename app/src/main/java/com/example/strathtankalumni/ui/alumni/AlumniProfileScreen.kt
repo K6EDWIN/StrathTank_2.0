@@ -89,10 +89,10 @@ fun AlumniProfileScreen(
 
     LaunchedEffect(currentUser) {
         currentUser?.let {
-            about = it.about.ifBlank { "No about yet" }
+            about = it.about?.ifBlank { "No about yet" } ?: "No about yet"
             experienceList = it.experience
             skills = it.skills
-            linkedinUrl = it.linkedinUrl
+            linkedinUrl = it.linkedinUrl ?: ""
         }
     }
 
@@ -139,7 +139,7 @@ fun AlumniProfileScreen(
                                 .clickable { launcher.launch("image/*") },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (!currentUser?.profilePhotoUrl.isNullOrEmpty()) {
+                            if (!currentUser?.profilePhotoUrl.isNullOrBlank()) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)
                                         .data(currentUser?.profilePhotoUrl)

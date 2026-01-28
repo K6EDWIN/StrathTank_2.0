@@ -28,10 +28,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:scheme="https"
-                    android:host="strathtankalumniapp.firebaseapp.com"
-                    android:pathPrefix="/__/auth/links" />
+                <data android:scheme="strathtank" android:host="login" />
             </intent-filter>
 
         </activity>

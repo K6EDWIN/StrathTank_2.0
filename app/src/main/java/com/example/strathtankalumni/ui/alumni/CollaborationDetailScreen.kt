@@ -254,7 +254,7 @@ fun CollaborationDetailScreen(
                         items(members, key = { it.userId }) { member ->
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data(member.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
+                                    .data((collaboration.projectImageUrl ?: "").ifBlank { R.drawable.sample_featured })
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = member.firstName,
@@ -289,7 +289,6 @@ fun CollaborationDetailScreen(
                         DiscussionItem(
                             name = comment.userName,
                             photoUrl = comment.userPhotoUrl,
-                            // ✅ FIX: Passing String timestamp to helper
                             time = formatCommentTime(comment.timestamp),
                             comment = comment.text,
                             isMe = comment.userId == currentUser?.userId
@@ -405,7 +404,6 @@ private fun DiscussionItem(
     }
 }
 
-// ✅ FIX: Updated to handle ISO String instead of Date
 private fun formatCommentTime(dateString: String?): String {
     if (dateString == null) return "Just now"
 

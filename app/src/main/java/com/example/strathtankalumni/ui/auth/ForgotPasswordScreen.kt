@@ -46,8 +46,9 @@ fun ForgotPasswordScreen(
             // ✅ CHANGED: Using Coroutine instead of addOnCompleteListener
             scope.launch {
                 try {
-                    // ✅ CHANGED: Supabase password reset call
-                    Supabase.client.auth.resetPasswordForEmail(email.trim())
+                    Supabase.client.auth.resetPasswordForEmail(
+                        email = email.trim(),
+                        redirectUrl = "strathtank://login")
 
                     isLoading = false
                     val message = if (resetStage == ResetStage.EMAIL_INPUT) {

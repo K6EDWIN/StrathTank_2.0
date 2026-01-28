@@ -2,10 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // ❌ REMOVED: Google Services is for Firebase
-    // id("com.google.gms.google-services")
 
-    // ✅ ADDED: Serialization plugin for Supabase data classes
     kotlin("plugin.serialization") version "1.9.0"
 }
 
@@ -52,13 +49,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended-android:1.6.7")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.compose.material3:material3")
-
-    // ❌ REMOVED: All Firebase Dependencies
-    // implementation(platform(libs.google.firebase.bom))
-    // implementation(libs.google.firebase.auth)
-    // implementation(libs.google.firebase.firestore)
-    // implementation(libs.google.firebase.database)
-    // implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
 
     // ✅ ADDED: Supabase BOM and Modules
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.0"))
