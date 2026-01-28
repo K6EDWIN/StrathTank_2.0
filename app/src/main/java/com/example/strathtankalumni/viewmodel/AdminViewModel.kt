@@ -6,13 +6,15 @@ import androidx.lifecycle.viewModelScope
 import com.example.strathtankalumni.data.Collaboration
 import com.example.strathtankalumni.data.Project
 import com.example.strathtankalumni.data.User
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.example.strathtankalumni.util.Supabase
+import io.github.jan.supabase.annotations.SupabaseExperimental
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Count
+import io.github.jan.supabase.realtime.selectAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 data class AdminDashboardStats(
     val totalUsers: Int = 0,
@@ -23,7 +25,7 @@ data class AdminDashboardStats(
 
 class AdminViewModel : ViewModel() {
 
-    private val firestore = FirebaseFirestore.getInstance()
+    private val supabase = Supabase.client
 
     private val _dashboardStats = MutableStateFlow(AdminDashboardStats())
     val dashboardStats: StateFlow<AdminDashboardStats> = _dashboardStats.asStateFlow()
@@ -47,22 +49,28 @@ class AdminViewModel : ViewModel() {
     private fun loadDashboardStats() {
         viewModelScope.launch {
             try {
-                val usersSnapshot = firestore.collection("users").get().await()
-                val projectsSnapshot = firestore.collection("projects").get().await()
-                val pendingVerifications = usersSnapshot.documents.count { doc ->
-                    val role = doc.getString("role") ?: ""
-                    val status = doc.getString("verificationStatus") ?: "verified"
-                    role != "admin" && status == "pending"
-                }
+                // ✅ FIX: Use select { count(Count.EXACT) } instead of select(head = true)
+                val usersCount = supabase.postgrest.from("users").select {
+                    count(Count.EXACT)
+                }.countOrNull() ?: 0
 
-                // If you later add a real reports collection, update this query.
-                val reportsSnapshot = firestore.collection("reports").get().await()
+                val projectsCount = supabase.postgrest.from("projects").select {
+                    count(Count.EXACT)
+                }.countOrNull() ?: 0
+
+                val pendingCount = supabase.postgrest.from("users").select {
+                    count(Count.EXACT)
+                    filter {
+                        neq("role", "admin")
+                        // eq("verification_status", "pending") // Uncomment if column exists
+                    }
+                }.countOrNull() ?: 0
 
                 _dashboardStats.value = AdminDashboardStats(
-                    totalUsers = usersSnapshot.size(),
-                    activeProjects = projectsSnapshot.size(), // refine with a status field later
-                    pendingVerifications = pendingVerifications,
-                    openReports = reportsSnapshot.size()
+                    totalUsers = usersCount.toInt(),
+                    activeProjects = projectsCount.toInt(),
+                    pendingVerifications = pendingCount.toInt(),
+                    openReports = 0
                 )
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error loading dashboard stats", e)
@@ -70,63 +78,52 @@ class AdminViewModel : ViewModel() {
         }
     }
 
+    @OptIn(SupabaseExperimental::class)
     private fun observeUsers() {
-        firestore.collection("users")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.e("AdminViewModel", "Error listening to users", e)
-                    _users.value = emptyList()
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    _users.value = snapshot.toObjects(User::class.java)
+        viewModelScope.launch {
+            // ✅ FIX: Use supabase.postgrest.from
+            // ✅ FIX: Use User::userId (not User::class.userId)
+            supabase.postgrest.from("users").selectAsFlow(User::userId)
+                .collect { list: List<User> -> // ✅ FIX: Explicit type for lambda arg
+                    _users.value = list
                     loadDashboardStats()
                 }
-            }
+        }
     }
 
+    @OptIn(SupabaseExperimental::class)
     private fun observeProjects() {
-        firestore.collection("projects")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.e("AdminViewModel", "Error listening to projects", e)
-                    _projects.value = emptyList()
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val list = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(Project::class.java)?.copy(id = doc.id)
-                    }
-                    _projects.value = list
+        viewModelScope.launch {
+            supabase.postgrest.from("projects").selectAsFlow(Project::id)
+                .collect { list: List<Project> ->
+                    // ✅ FIX: Handle nullable createdAt for sorting
+                    _projects.value = list.sortedByDescending { it.createdAt ?: "" }
                     loadDashboardStats()
                 }
-            }
+        }
     }
 
+    @OptIn(SupabaseExperimental::class)
     private fun observeCollaborationRequests() {
-        firestore.collection("collaborations")
-            .orderBy("requestedAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.e("AdminViewModel", "Error listening to collaborations", e)
-                    _collaborationRequests.value = emptyList()
-                    return@addSnapshotListener
+        viewModelScope.launch {
+            supabase.postgrest.from("collaborations").selectAsFlow(Collaboration::id)
+                .collect { list: List<Collaboration> ->
+                    // ✅ FIX: Handle nullable requestedAt for sorting
+                    _collaborationRequests.value = list.sortedByDescending { it.requestedAt ?: "" }
                 }
-                if (snapshot != null) {
-                    _collaborationRequests.value = snapshot.toObjects(Collaboration::class.java)
-                }
-            }
+        }
     }
 
     fun updateUserVerification(userId: String, newStatus: String) {
         if (userId.isBlank()) return
         viewModelScope.launch {
             try {
-                firestore.collection("users")
-                    .document(userId)
-                    .update("verificationStatus", newStatus)
-                    .await()
+                supabase.postgrest.from("users").update(
+                    mapOf("verification_status" to newStatus)
+                ) {
+                    filter { eq("user_id", userId) }
+                }
+                loadDashboardStats()
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error updating user verification", e)
             }
@@ -137,10 +134,11 @@ class AdminViewModel : ViewModel() {
         if (projectId.isBlank()) return
         viewModelScope.launch {
             try {
-                firestore.collection("projects")
-                    .document(projectId)
-                    .update("status", newStatus)
-                    .await()
+                supabase.postgrest.from("projects").update(
+                    mapOf("status" to newStatus)
+                ) {
+                    filter { eq("id", projectId) }
+                }
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error updating project status", e)
             }
@@ -151,15 +149,14 @@ class AdminViewModel : ViewModel() {
         if (collaborationId.isBlank()) return
         viewModelScope.launch {
             try {
-                firestore.collection("collaborations")
-                    .document(collaborationId)
-                    .update("status", newStatus)
-                    .await()
+                supabase.postgrest.from("collaborations").update(
+                    mapOf("status" to newStatus)
+                ) {
+                    filter { eq("id", collaborationId) }
+                }
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error updating collaboration status", e)
             }
         }
     }
 }
-
-

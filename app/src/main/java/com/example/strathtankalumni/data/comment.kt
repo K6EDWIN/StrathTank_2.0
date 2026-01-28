@@ -1,14 +1,21 @@
 package com.example.strathtankalumni.data
 
-import com.google.firebase.firestore.ServerTimestamp
-import java.util.Date
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
+@Serializable
 data class Comment(
     val id: String = "",
     val text: String = "",
     val userId: String = "",
     val userName: String = "",
     val userPhotoUrl: String = "",
-    @ServerTimestamp
-    val createdAt: Date? = null
+
+    // ✅ ADDED: Required to link the comment to a project (used in AuthViewModel)
+    @SerialName("project_id")
+    val projectId: String = "",
+
+    // ✅ CHANGED: Supabase returns timestamps as ISO 8601 Strings
+    @SerialName("created_at")
+    val createdAt: String? = null
 )

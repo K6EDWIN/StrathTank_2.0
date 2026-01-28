@@ -6,24 +6,28 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.strathtankalumni.data.*
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.storage.FirebaseStorage
+import com.example.strathtankalumni.util.Supabase
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.buildJsonObject
+import io.github.jan.supabase.postgrest.query.Count
+import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.realtime.selectAsFlow
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.PersonAdd
+import io.github.jan.supabase.annotations.SupabaseExperimental
 
 // AUTH STATE
 sealed class AuthState {
@@ -56,9 +60,7 @@ sealed class ProjectDetailState {
 
 class AuthViewModel : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
+    private val supabase = Supabase.client
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
@@ -75,7 +77,6 @@ class AuthViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<NotificationItemData>>(emptyList())
     val notifications: StateFlow<List<NotificationItemData>> = _notifications
 
-    // IAN'S STATEFLOWS
     private val _projectState = MutableStateFlow<ProjectState>(ProjectState.Idle)
     val projectState: StateFlow<ProjectState> = _projectState
 
@@ -91,11 +92,9 @@ class AuthViewModel : ViewModel() {
     private val _collaborationMembers = MutableStateFlow<List<User>>(emptyList())
     val collaborationMembers: StateFlow<List<User>> = _collaborationMembers
 
-    // Project Comments (General)
     private val _projectComments = MutableStateFlow<List<Comment>>(emptyList())
     val projectComments: StateFlow<List<Comment>> = _projectComments.asStateFlow()
 
-    // Hub Comments (For Collaboration Hub)
     private val _hubComments = MutableStateFlow<List<ProjectComment>>(emptyList())
     val hubComments: StateFlow<List<ProjectComment>> = _hubComments.asStateFlow()
 
@@ -104,10 +103,17 @@ class AuthViewModel : ViewModel() {
 
     init {
         loadCurrentUser()
-        loadConnections()
-        loadCollaborations()
-        fetchAllAlumni()
-        observeNotifications()
+        viewModelScope.launch {
+            supabase.auth.sessionStatus.collect { status ->
+                if (status is SessionStatus.Authenticated) {
+                    fetchCurrentUser()
+                    loadConnections()
+                    loadCollaborations()
+                    fetchAllAlumni()
+                    observeNotifications()
+                }
+            }
+        }
     }
 
     fun resetAuthState() { _authState.value = AuthState.Idle }
@@ -125,17 +131,21 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
-                val authResult = auth.createUserWithEmailAndPassword(user.email, password).await()
-                val firebaseUser = authResult.user
-                if (firebaseUser != null) {
-                    firebaseUser.sendEmailVerification().await()
-                    val newUser = user.copy(userId = firebaseUser.uid)
-                    firestore.collection("users").document(firebaseUser.uid).set(newUser).await()
-                    auth.signOut()
-                    _authState.value = AuthState.Success("Registration successful! Please verify your email.")
-                } else {
-                    _authState.value = AuthState.Error("User creation failed.")
+                // 1. Sign up with Metadata
+                supabase.auth.signUpWith(Email) {
+                    this.email = user.email
+                    this.password = password
+                    // Send profile data here so the Trigger can save it
+                    this.data = buildJsonObject {
+                        put("first_name", user.firstName)
+                        put("last_name", user.lastName)
+                        put("role", user.role)
+                    }
                 }
+
+                // 2. Success (The Trigger handles the database insert)
+                _authState.value = AuthState.Success("Registration successful! Please check your email.")
+
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "An unknown error occurred.")
             }
@@ -150,65 +160,54 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
-                val authResult = auth.signInWithEmailAndPassword(email, password).await()
-                val firebaseUser = authResult.user
-                if (firebaseUser != null) {
-                    if (firebaseUser.isEmailVerified) {
-                        val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
-                        val user = doc.toObject(User::class.java)
-                        _currentUser.value = user
-                        _authState.value = AuthState.Success("Login successful!", user?.role)
-                    } else {
-                        auth.signOut()
-                        _authState.value = AuthState.Error("Please verify your email before logging in.")
-                    }
+                supabase.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = password
                 }
+
+                fetchCurrentUser()
+                val currentUser = _currentUser.value
+                _authState.value = AuthState.Success("Login successful!", currentUser?.role)
+
             } catch (e: Exception) {
-                _authState.value = AuthState.Error("Login failed: Invalid email or password.")
+                _authState.value = AuthState.Error("Login failed: ${e.message}")
             }
         }
     }
 
     fun signOut() {
-        auth.signOut()
-        _currentUser.value = null
+        viewModelScope.launch {
+            supabase.auth.signOut()
+            _currentUser.value = null
+        }
     }
 
     fun loadCurrentUser() {
-        val firebaseUser = auth.currentUser ?: return
+        val sessionUser = supabase.auth.currentUserOrNull() ?: return
         viewModelScope.launch {
             try {
-                val doc = firestore.collection("users").document(firebaseUser.uid).get().await()
-                _currentUser.value = doc.toObject(User::class.java)
+                val user = supabase.postgrest.from("users")
+                    .select { filter { eq("user_id", sessionUser.id) } }
+                    .decodeSingleOrNull<User>()
+                _currentUser.value = user
             } catch (e: Exception) {
                 _currentUser.value = null
             }
         }
     }
 
-    fun fetchCurrentUser() {
-        val uid = auth.currentUser?.uid ?: return
-        viewModelScope.launch {
-            try {
-                val doc = firestore.collection("users").document(uid).get().await()
-                _currentUser.value = doc.toObject(User::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
+    fun fetchCurrentUser() = loadCurrentUser()
 
     fun fetchUserById(userId: String, onResult: (User?) -> Unit) {
-        if (userId.isEmpty()) {
-            onResult(null)
-            return
-        }
+        if (userId.isEmpty()) { onResult(null); return }
         viewModelScope.launch {
             try {
-                val document = firestore.collection("users").document(userId).get().await()
-                onResult(document.toObject(User::class.java))
+                val user = supabase.postgrest.from("users")
+                    .select { filter { eq("user_id", userId) } }
+                    .decodeSingleOrNull<User>()
+                onResult(user)
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error fetching user by ID: $userId", e)
+                Log.e("AuthViewModel", "Error fetching user", e)
                 onResult(null)
             }
         }
@@ -217,16 +216,18 @@ class AuthViewModel : ViewModel() {
     fun updateUserProfile(
         about: String, experience: List<ExperienceItem>, skills: List<String>, linkedinUrl: String, onResult: (Boolean) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: return onResult(false)
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return onResult(false)
         viewModelScope.launch {
             try {
                 val updates = mapOf(
                     "about" to about,
                     "experience" to experience,
                     "skills" to skills,
-                    "linkedinUrl" to linkedinUrl
+                    "linkedin_url" to linkedinUrl
                 )
-                firestore.collection("users").document(uid).set(updates, SetOptions.merge()).await()
+                supabase.postgrest.from("users").update(updates) {
+                    filter { eq("user_id", uid) }
+                }
                 fetchCurrentUser()
                 onResult(true)
             } catch (e: Exception) {
@@ -236,24 +237,29 @@ class AuthViewModel : ViewModel() {
     }
 
     fun uploadProfilePhoto(uri: Uri, contentResolver: ContentResolver, onResult: (Boolean) -> Unit) {
-        val user = auth.currentUser ?: return onResult(false)
+        val userId = supabase.auth.currentUserOrNull()?.id ?: return onResult(false)
         viewModelScope.launch {
             try {
-                val storageRef = storage.reference.child("user_photos/${user.uid}/profile_photo.jpg")
+                val bytes = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: return@launch onResult(false)
 
-                // Try putFile, allow fallback to stream for some URI types
-                try {
-                    storageRef.putFile(uri).await()
-                } catch (e: Exception) {
-                    val stream = withContext(Dispatchers.IO) { contentResolver.openInputStream(uri) }
-                    stream?.use { storageRef.putStream(it).await() } ?: throw e
+                val fileName = "user_photos/$userId/profile_photo.jpg"
+                val bucket = supabase.storage.from("avatars")
+
+                // ✅ FIX: Correct upload syntax
+                bucket.upload(fileName, bytes) {
+                    upsert = true
                 }
+                val downloadUrl = bucket.publicUrl(fileName)
 
-                val downloadUrl = storageRef.downloadUrl.await().toString()
-                firestore.collection("users").document(user.uid).update("profilePhotoUrl", downloadUrl).await()
+                supabase.postgrest.from("users").update(mapOf("profile_photo_url" to downloadUrl)) {
+                    filter { eq("user_id", userId) }
+                }
                 fetchCurrentUser()
                 onResult(true)
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Upload failed", e)
                 onResult(false)
             }
         }
@@ -261,28 +267,32 @@ class AuthViewModel : ViewModel() {
 
     // --- CONNECTIONS ---
     fun fetchAllAlumni() {
-        val currentUserId = auth.currentUser?.uid ?: return
+        val currentUserId = supabase.auth.currentUserOrNull()?.id ?: return
         viewModelScope.launch {
             try {
-                val snapshot = firestore.collection("users").whereNotEqualTo("userId", currentUserId).get().await()
-                _alumniList.value = snapshot.toObjects(User::class.java)
+                val users = supabase.postgrest.from("users")
+                    .select { filter { neq("user_id", currentUserId) } }
+                    .decodeList<User>()
+                _alumniList.value = users
             } catch (e: Exception) {
                 _alumniList.value = emptyList()
             }
         }
     }
 
+    @OptIn(SupabaseExperimental::class)
     fun loadConnections() {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("connections")
-            .whereArrayContains("participantIds", uid)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    _connections.value = emptyList()
-                    return@addSnapshotListener
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return
+        viewModelScope.launch {
+            // ✅ FIX: Use postgrest.from and explicit type for list
+            supabase.postgrest.from("connections").selectAsFlow(Connection::id)
+                .map { list: List<Connection> ->
+                    list.filter { it.participantIds.contains(uid) }
                 }
-                _connections.value = snapshot?.toObjects(Connection::class.java) ?: emptyList()
-            }
+                .collect { filteredList ->
+                    _connections.value = filteredList
+                }
+        }
     }
 
     fun sendConnectionRequest(otherUser: User) {
@@ -298,7 +308,7 @@ class AuthViewModel : ViewModel() {
         )
         viewModelScope.launch {
             try {
-                firestore.collection("connections").document(connectionId).set(newConnection).await()
+                supabase.postgrest.from("connections").upsert(newConnection)
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error sending connection", e)
             }
@@ -308,52 +318,40 @@ class AuthViewModel : ViewModel() {
     fun updateConnectionStatus(connection: Connection, newStatus: String) {
         viewModelScope.launch {
             try {
-                firestore.collection("connections").document(connection.id)
-                    .update(mapOf("status" to newStatus, "lastUpdated" to FieldValue.serverTimestamp())).await()
+                supabase.postgrest.from("connections").update(mapOf("status" to newStatus)) {
+                    filter { eq("id", connection.id) }
+                }
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error updating status", e)
             }
         }
     }
 
-    // --- COLLABORATIONS (FIXED) ---
+    // --- COLLABORATIONS ---
+    @OptIn(SupabaseExperimental::class)
     private fun loadCollaborations() {
-        val uid = auth.currentUser?.uid ?: return
-
-        // Listener 1: Where I am Collaborator
-        firestore.collection("collaborations")
-            .whereEqualTo("collaboratorId", uid)
-            .addSnapshotListener { snapshot, e ->
-                if (e == null && snapshot != null) {
-                    val myCollabs = snapshot.toObjects(Collaboration::class.java)
-                    updateCollaborationsList(myCollabs)
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return
+        viewModelScope.launch {
+            // ✅ FIX: Explicit typing for list
+            supabase.postgrest.from("collaborations").selectAsFlow(Collaboration::id)
+                .map { list: List<Collaboration> ->
+                    list.filter { it.projectOwnerId == uid || it.collaboratorId == uid }
                 }
-            }
-
-        // Listener 2: Where I am Owner
-        firestore.collection("collaborations")
-            .whereEqualTo("projectOwnerId", uid)
-            .addSnapshotListener { snapshot, e ->
-                if (e == null && snapshot != null) {
-                    val ownerCollabs = snapshot.toObjects(Collaboration::class.java)
-                    updateCollaborationsList(ownerCollabs)
+                .collect { filteredList ->
+                    _collaborations.value = filteredList
                 }
-            }
-    }
-
-    private fun updateCollaborationsList(newItems: List<Collaboration>) {
-        val current = _collaborations.value
-        val combined = (current + newItems).distinctBy { it.id }
-        _collaborations.value = combined
+        }
     }
 
     fun requestCollaboration(project: Project) {
         val currentUser = _currentUser.value ?: return
-        val collabId = "${project.id}_${currentUser.userId}"
+        // Safe access for nullable Project ID
+        val projectId = project.id ?: return
+        val collabId = "${projectId}_${currentUser.userId}"
 
         val newCollaboration = Collaboration(
             id = collabId,
-            projectId = project.id,
+            projectId = projectId,
             projectTitle = project.title,
             projectDescription = project.description,
             projectImageUrl = project.imageUrl,
@@ -366,7 +364,7 @@ class AuthViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                firestore.collection("collaborations").document(collabId).set(newCollaboration, SetOptions.merge()).await()
+                supabase.postgrest.from("collaborations").upsert(newCollaboration)
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error requesting collab", e)
             }
@@ -376,8 +374,9 @@ class AuthViewModel : ViewModel() {
     fun updateCollaborationStatus(collaborationId: String, newStatus: String) {
         viewModelScope.launch {
             try {
-                firestore.collection("collaborations").document(collaborationId)
-                    .update(mapOf("status" to newStatus, "updatedAt" to FieldValue.serverTimestamp())).await()
+                supabase.postgrest.from("collaborations").update(mapOf("status" to newStatus)) {
+                    filter { eq("id", collaborationId) }
+                }
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error updating collab", e)
             }
@@ -387,20 +386,21 @@ class AuthViewModel : ViewModel() {
     fun getUsersForCollaboration(projectId: String, projectOwnerId: String) {
         viewModelScope.launch {
             try {
-                // This query relies on the "status" field being present.
-                // If the index is missing, this will fail. Check Logcat for index creation link.
-                val snapshot = firestore.collection("collaborations")
-                    .whereEqualTo("projectId", projectId)
-                    .whereEqualTo("status", "accepted")
-                    .get().await()
+                val collaborators = supabase.postgrest.from("collaborations")
+                    .select {
+                        filter {
+                            eq("project_id", projectId)
+                            eq("status", "accepted")
+                        }
+                    }.decodeList<Collaboration>()
 
-                val collaboratorIds = snapshot.toObjects(Collaboration::class.java).map { it.collaboratorId }
+                val collaboratorIds = collaborators.map { it.collaboratorId }
                 val allIds = (collaboratorIds + projectOwnerId).distinct()
 
-                // Optimization: If user list is already loaded, filter locally
-                val users = _alumniList.value.filter { it.userId in allIds }
+                val users = supabase.postgrest.from("users")
+                    .select { filter { isIn("user_id", allIds) } }
+                    .decodeList<User>()
 
-                // If local list is empty (rare), fallback to fetching (omitted for brevity but good practice)
                 _collaborationMembers.value = users
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching members", e)
@@ -408,30 +408,34 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // --- PROJECTS & COMMENTS ---
-
-    // (Project upload methods omitted for brevity, assumed working)
+    // --- PROJECTS ---
 
     fun saveProject(
         title: String, description: String, projectUrl: String, githubUrl: String, projectType: String,
         imageUri: Uri?, mediaImageUris: List<Uri>, pdfUri: Uri?,
         categories: List<String>, programmingLanguages: List<String>, databaseUsed: List<String>, techStack: List<String>,
+        contentResolver: ContentResolver,
         onResult: (Boolean) -> Unit
     ) {
         _projectState.value = ProjectState.Loading
-        val userId = auth.currentUser?.uid ?: return
+        val userId = supabase.auth.currentUserOrNull()?.id ?: return
         viewModelScope.launch {
             try {
-                val imageUrl = uploadImage(imageUri, userId)
-                val mediaImageUrls = uploadMultipleImages(mediaImageUris, userId)
-                val pdfUrl = uploadPdf(pdfUri, userId)
+                val imageUrl = uploadFile(imageUri, "projects", "covers/$userId/${UUID.randomUUID()}.jpg", contentResolver)
+
+                val mediaImageUrls = mediaImageUris.mapNotNull { uri ->
+                    uploadFile(uri, "projects", "media/$userId/${UUID.randomUUID()}.jpg", contentResolver)
+                }
+                val pdfUrl = uploadFile(pdfUri, "projects", "docs/$userId/${UUID.randomUUID()}.pdf", contentResolver)
 
                 val newProject = Project(
+                    // ID generated by DB
                     userId = userId, title = title, description = description, projectUrl = projectUrl, githubUrl = githubUrl,
                     projectType = projectType, imageUrl = imageUrl ?: "", mediaImageUrls = mediaImageUrls, pdfUrl = pdfUrl ?: "",
                     categories = categories, programmingLanguages = programmingLanguages, databaseUsed = databaseUsed, techStack = techStack
                 )
-                firestore.collection("projects").add(newProject).await()
+                supabase.postgrest.from("projects").insert(newProject)
+
                 _projectState.value = ProjectState.Success("Project saved!")
                 onResult(true)
             } catch (e: Exception) {
@@ -441,36 +445,32 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private suspend fun uploadImage(imageUri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
-        if (imageUri == null) return@withContext null
-        try {
-            val ref = storage.reference.child("projects/$userId/cover_${UUID.randomUUID()}")
-            ref.putFile(imageUri).await()
-            ref.downloadUrl.await().toString()
-        } catch (e: Exception) { null }
-    }
+    private suspend fun uploadFile(uri: Uri?, bucketName: String, path: String, resolver: ContentResolver): String? {
+        if (uri == null) return null
+        return try {
+            val bytes = withContext(Dispatchers.IO) {
+                resolver.openInputStream(uri)?.use { it.readBytes() }
+            } ?: return null
 
-    private suspend fun uploadMultipleImages(uris: List<Uri>, userId: String): List<String> = withContext(Dispatchers.IO) {
-        uris.mapNotNull { uri -> uploadImage(uri, userId) } // Reusing uploadImage for simplicity
-    }
-
-    private suspend fun uploadPdf(uri: Uri?, userId: String): String? = withContext(Dispatchers.IO) {
-        if (uri == null) return@withContext null
-        try {
-            val ref = storage.reference.child("projects/$userId/doc_${UUID.randomUUID()}.pdf")
-            ref.putFile(uri).await()
-            ref.downloadUrl.await().toString()
-        } catch (e: Exception) { null }
+            val bucket = supabase.storage.from(bucketName)
+            // ✅ FIX: Correct upload syntax
+            bucket.upload(path, bytes) {
+                upsert = true
+            }
+            bucket.publicUrl(path)
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "File upload failed: $path", e)
+            null
+        }
     }
 
     fun fetchAllProjects() {
         viewModelScope.launch {
             _allProjectsState.value = ProjectsListState.Loading
             try {
-                val snapshot = firestore.collection("projects")
-                    .orderBy("createdAt", Query.Direction.DESCENDING)
-                    .get().await()
-                val projects = snapshot.documents.mapNotNull { it.toObject(Project::class.java)?.copy(id = it.id) }
+                val projects = supabase.postgrest.from("projects")
+                    .select { order("created_at", Order.DESCENDING) }
+                    .decodeList<Project>()
                 _allProjectsState.value = ProjectsListState.Success(projects)
             } catch (e: Exception) {
                 _allProjectsState.value = ProjectsListState.Error(e.message ?: "Error")
@@ -479,15 +479,25 @@ class AuthViewModel : ViewModel() {
     }
 
     fun fetchProjectById(projectId: String) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = supabase.auth.currentUserOrNull()?.id
         viewModelScope.launch {
             try {
-                val doc = firestore.collection("projects").document(projectId).get().await()
-                val project = doc.toObject(Project::class.java)?.copy(id = doc.id)
+                val project = supabase.postgrest.from("projects")
+                    .select { filter { eq("id", projectId) } }
+                    .decodeSingleOrNull<Project>()
 
                 if (project != null) {
-                    val likeDoc = firestore.collection("projects").document(projectId).collection("likes").document(uid).get().await()
-                    _isProjectLiked.value = likeDoc.exists()
+                    if (uid != null) {
+                        // ✅ FIX: Removed unsupported 'head' param, used count()
+                        val count = supabase.postgrest.from("project_likes").select {
+                            count(Count.EXACT)
+                            filter {
+                                eq("project_id", projectId)
+                                eq("user_id", uid)
+                            }
+                        }.countOrNull() ?: 0
+                        _isProjectLiked.value = count > 0
+                    }
                     _projectDetailState.value = ProjectDetailState.Success(project)
                 } else {
                     _projectDetailState.value = ProjectDetailState.Error("Project not found")
@@ -499,62 +509,93 @@ class AuthViewModel : ViewModel() {
     }
 
     // --- COMMENTS & LIKES ---
-    // For Project Details (Public Comments)
+
+    @OptIn(SupabaseExperimental::class)
     fun fetchCommentsForProject(projectId: String) {
-        firestore.collection("projects").document(projectId).collection("comments")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { s, _ ->
-                if (s != null) _projectComments.value = s.toObjects(Comment::class.java)
-            }
+        if (projectId.isBlank()) return
+        viewModelScope.launch {
+            // ✅ FIX: Explicit types and correct filtering
+            supabase.postgrest.from("comments").selectAsFlow(Comment::id)
+                .map { list: List<Comment> ->
+                    list.filter { it.projectId == projectId }
+                        .sortedByDescending { it.createdAt }
+                }
+                .collect { sortedComments ->
+                    _projectComments.value = sortedComments
+                }
+        }
     }
 
     fun postComment(projectId: String, text: String) {
         val user = _currentUser.value ?: return
-        val newComment = Comment(id = UUID.randomUUID().toString(), text = text, userId = user.userId, userName = "${user.firstName} ${user.lastName}", userPhotoUrl = user.profilePhotoUrl)
+        val newComment = Comment(
+            id = UUID.randomUUID().toString(),
+            text = text,
+            userId = user.userId,
+            projectId = projectId,
+            userName = "${user.firstName} ${user.lastName}",
+            userPhotoUrl = user.profilePhotoUrl
+        )
         viewModelScope.launch {
-            val ref = firestore.collection("projects").document(projectId)
-            firestore.runBatch { b ->
-                b.set(ref.collection("comments").document(newComment.id), newComment)
-                b.update(ref, "commentCount", FieldValue.increment(1))
-            }
+            supabase.postgrest.from("comments").insert(newComment)
         }
     }
 
     fun toggleProjectLike(projectId: String, isLiked: Boolean) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return
         viewModelScope.launch {
-            val ref = firestore.collection("projects").document(projectId)
-            val likeRef = ref.collection("likes").document(uid)
-            firestore.runTransaction { t ->
-                val currentLikes = t.get(ref).getLong("likes") ?: 0
-                if (isLiked) {
-                    t.delete(likeRef)
-                    t.update(ref, "likes", (currentLikes - 1).coerceAtLeast(0))
-                } else {
-                    t.set(likeRef, mapOf("date" to FieldValue.serverTimestamp()))
-                    t.update(ref, "likes", currentLikes + 1)
+            if (isLiked) {
+                supabase.postgrest.from("project_likes").delete {
+                    filter {
+                        eq("project_id", projectId)
+                        eq("user_id", uid)
+                    }
                 }
-            }.await()
-            _isProjectLiked.value = !isLiked
+                _isProjectLiked.value = false
+            } else {
+                val likeData = mapOf("project_id" to projectId, "user_id" to uid)
+                supabase.postgrest.from("project_likes").insert(likeData)
+                _isProjectLiked.value = true
+            }
         }
     }
 
-    // For Collaboration Hub (Private Team Chat)
-    // Renamed to fetchHubComments / addHubComment to avoid conflict if needed
-    fun fetchComments(projectId: String) { // Used in CollaborationDetailScreen
+    // --- HUB COMMENTS (Private Collaboration Chat) ---
+
+    @OptIn(SupabaseExperimental::class)
+    fun fetchHubComments(projectId: String) {
         if (projectId.isBlank()) return
-        firestore.collection("projects").document(projectId).collection("comments")
-            .orderBy("timestamp", Query.Direction.ASCENDING)
-            .addSnapshotListener { s, e ->
-                if (s != null) _hubComments.value = s.toObjects(ProjectComment::class.java)
-            }
+        viewModelScope.launch {
+            // ✅ FIX: Explicit types
+            supabase.postgrest.from("hub_comments").selectAsFlow(ProjectComment::id)
+                .map { list: List<ProjectComment> ->
+                    list.filter { it.projectId == projectId }
+                        .sortedBy { it.timestamp }
+                }
+                .collect { sortedComments ->
+                    _hubComments.value = sortedComments
+                }
+        }
     }
 
-    fun addComment(projectId: String, text: String, user: User?) { // Used in CollaborationDetailScreen
-        if (user == null) return
-        val comment = ProjectComment(userId = user.userId, userName = "${user.firstName} ${user.lastName}", userPhotoUrl = user.profilePhotoUrl, text = text, projectId = projectId)
+    fun addHubComment(projectId: String, text: String, user: User?) {
+        if (user == null || projectId.isBlank()) return
+
+        val comment = ProjectComment(
+            id = UUID.randomUUID().toString(),
+            projectId = projectId,
+            userId = user.userId,
+            userName = "${user.firstName} ${user.lastName}",
+            userPhotoUrl = user.profilePhotoUrl,
+            text = text
+        )
+
         viewModelScope.launch {
-            firestore.collection("projects").document(projectId).collection("comments").add(comment)
+            try {
+                supabase.postgrest.from("hub_comments").insert(comment)
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error sending hub comment", e)
+            }
         }
     }
 
@@ -569,13 +610,11 @@ class AuthViewModel : ViewModel() {
                     .combine(alumniList) { (conns, collabs), alumni ->
                         val list = mutableListOf<NotificationItemData>()
 
-                        // Connection Requests
                         conns.filter { it.status == "pending" && it.senderId != myId }.forEach { req ->
                             val sender = alumni.find { it.userId == req.senderId }
                             list.add(NotificationItemData(req.id, Icons.Default.PersonAdd, "${sender?.firstName} ${sender?.lastName}", "Sent connection request", NotificationType.CONNECTION_REQUEST, req.senderId))
                         }
 
-                        // Collab Requests
                         collabs.filter { it.status == "pending" && it.projectOwnerId == myId }.forEach { req ->
                             list.add(NotificationItemData(req.id, Icons.Default.GroupAdd, req.collaboratorName, "Wants to join ${req.projectTitle}", NotificationType.COLLABORATION_REQUEST, req.id))
                         }

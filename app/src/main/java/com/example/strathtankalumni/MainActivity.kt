@@ -10,10 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.strathtankalumni.navigation.AppNavHost
 import com.example.strathtankalumni.ui.theme.StrathTankAlumniTheme
+import com.example.strathtankalumni.util.Supabase
+import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Supabase.client.handleDeeplinks(intent)
         setContent {
             StrathTankAlumniTheme {
 

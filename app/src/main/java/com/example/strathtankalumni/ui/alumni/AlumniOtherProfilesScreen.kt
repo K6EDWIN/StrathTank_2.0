@@ -340,11 +340,11 @@ fun OtherUserProfileScreen(
                         }
                     } else {
                         userProjects.forEach { project ->
-                            // ✅ FIX: Using Unique Name "UserProfileProjectCard"
                             UserProfileProjectCard(
                                 project = project,
                                 onClick = {
-                                    navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id))
+                                    // ✅ FIX: Added ?: "" safe call for nullable project.id
+                                    navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id ?: ""))
                                 }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -425,7 +425,6 @@ private fun ExperienceItemView(item: ExperienceItem) {
     }
 }
 
-// ✅ FIX: Renamed Component to avoid "Conflicting Overloads"
 @Composable
 private fun UserProfileProjectCard(project: Project, onClick: () -> Unit) {
     ElevatedCard(

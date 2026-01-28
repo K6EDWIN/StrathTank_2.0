@@ -29,9 +29,9 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-//import com.example.strathtankalumni.viewmodel.ConversationWithUser
-//import com.example.strathtankalumni.viewmodel.MessagesViewModel
-// Ensure MessagesViewModel is imported
+// ✅ FIX: Uncommented/Added imports
+import com.example.strathtankalumni.viewmodel.ConversationWithUser
+import com.example.strathtankalumni.viewmodel.MessagesViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,7 +52,8 @@ fun AlumniMessagesScreen(
     LaunchedEffect(currentUser) {
         val userId = currentUser?.userId
         if (userId != null) {
-            viewModel.loadConversations(userId, null)
+            // ✅ FIX: Removed null argument (new ViewModel only takes userId)
+            viewModel.loadConversations(userId)
         }
     }
 
@@ -116,10 +117,8 @@ fun AlumniMessagesScreen(
                             onClick = {
                                 val otherUser = conversationWithUser.user
 
-                                // ✅ FIX: Sanitize name to prevent scrambled URL
                                 var safeName = "${otherUser.firstName} ${otherUser.lastName}".trim()
                                 if (safeName.isBlank()) safeName = "User"
-                                // Replace slashes just in case
                                 safeName = safeName.replace("/", "-")
 
                                 navController.navigate("direct_message/${otherUser.userId}/$safeName")
@@ -183,9 +182,11 @@ fun ConversationItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    conversation.lastMessageTimestamp?.let { date ->
+                    // ✅ FIX: Handling nullable String timestamp
+                    val timestamp = conversation.lastMessageTimestamp
+                    if (timestamp != null) {
                         Text(
-                            text = formatMessageTime(date),
+                            text = formatMessageTime(timestamp),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isUnread) MaterialTheme.colorScheme.primary else Color.Gray
                         )
@@ -217,7 +218,15 @@ fun ConversationItem(
     }
 }
 
-private fun formatMessageTime(date: Date): String {
+// ✅ FIX: Updated to parse ISO 8601 String
+private fun formatMessageTime(dateString: String): String {
+    val date = try {
+        // Attempt to parse Supabase timestamp (e.g. 2023-12-01T12:00:00.123456)
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(dateString) ?: Date()
+    } catch (e: Exception) {
+        Date()
+    }
+
     val now = System.currentTimeMillis()
     val diff = now - date.time
     return when {

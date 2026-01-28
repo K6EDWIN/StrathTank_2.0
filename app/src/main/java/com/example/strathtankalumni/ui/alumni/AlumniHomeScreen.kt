@@ -3,7 +3,6 @@ package com.example.strathtankalumni.ui.alumni
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -105,10 +104,12 @@ fun AlumniHomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
-                        items(featuredProjects, key = { it.id }) { project ->
+                        // ✅ FIX 1: Provide a fallback string for the key
+                        items(featuredProjects, key = { it.id ?: "featured_${it.hashCode()}" }) { project ->
                             FeaturedProjectCard(
                                 project = project,
-                                onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id)) }
+                                // ✅ FIX 2: Provide a fallback string for navigation
+                                onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id ?: "")) }
                             )
                         }
                     }
@@ -153,12 +154,13 @@ fun AlumniHomeScreen(
                     }
                 }
             } else {
-                items(latestProjects, key = { it.id }) { project ->
+                // ✅ FIX 3: Provide a fallback string for the key
+                items(latestProjects, key = { it.id ?: "latest_${it.hashCode()}" }) { project ->
                     Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        // ✅ FIX: Renamed to LatestProjectItem to avoid conflict
                         LatestProjectItem(
                             project = project,
-                            onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id)) }
+                            // ✅ FIX 4: Provide a fallback string for navigation
+                            onClick = { navController.navigate(Screen.AlumniProjectDetail.createRoute(project.id ?: "")) }
                         )
                     }
                 }
@@ -268,7 +270,7 @@ private fun SuggestedUserCard(user: User, onClick: () -> Unit) {
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(user.profilePhotoUrl.ifEmpty { R.drawable.noprofile })
+                    .data(user.profilePhotoUrl?.ifEmpty { R.drawable.noprofile })
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
@@ -378,7 +380,6 @@ private fun FeaturedProjectCard(project: Project, onClick: () -> Unit) {
     }
 }
 
-// ✅ FIX: Renamed to LatestProjectItem to prevent conflict with other files
 @Composable
 fun LatestProjectItem(
     project: Project,
@@ -431,7 +432,6 @@ fun LatestProjectItem(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tags/Type
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(4.dp)

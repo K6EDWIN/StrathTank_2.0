@@ -29,7 +29,9 @@ import coil.size.Size
 import com.example.strathtankalumni.R
 import com.example.strathtankalumni.data.User
 import com.example.strathtankalumni.viewmodel.AuthViewModel
-//import com.example.strathtankalumni.viewmodel.MessagesViewModel
+// ✅ FIX: Added missing imports
+import com.example.strathtankalumni.viewmodel.MessagesViewModel
+import com.example.strathtankalumni.viewmodel.Message
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +45,7 @@ fun DirectMessageScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val currentUserId = currentUser?.userId
 
-    // ✅ State to hold the REAL profile fetched from DB
+    // State to hold the REAL profile fetched from DB
     var chatPartner by remember { mutableStateOf<User?>(null) }
 
     LaunchedEffect(key1 = currentUserId, key2 = otherUserId) {
@@ -51,7 +53,6 @@ fun DirectMessageScreen(
             viewModel.loadDirectMessages(currentUserId, otherUserId)
             viewModel.markAsRead(currentUserId, otherUserId)
         }
-        // ✅ FIX: Fetch the real user details immediately
         authViewModel.fetchUserById(otherUserId) { user ->
             chatPartner = user
         }
@@ -63,7 +64,7 @@ fun DirectMessageScreen(
 
     val messages by viewModel.directMessages.collectAsState()
 
-    // ✅ FIX: Use fetched name if available, else fallback to nav param
+    // Use fetched name if available, else fallback to nav param
     val displayName = chatPartner?.let { "${it.firstName} ${it.lastName}" } ?: userName
     val displayPhoto = chatPartner?.profilePhotoUrl
     val myPhoto = currentUser?.profilePhotoUrl
@@ -115,6 +116,7 @@ fun DirectMessageScreen(
                         contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Reversed is safe here because 'messages' is strictly typed as List<Message>
                         items(messages.reversed()) { message ->
                             MessageBubble(
                                 text = message.text,

@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material3.*
@@ -25,7 +24,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +59,8 @@ fun CollaborationDetailScreen(
     LaunchedEffect(collaboration) {
         if (collaboration != null) {
             authViewModel.getUsersForCollaboration(collaboration.projectId, collaboration.projectOwnerId)
-            authViewModel.fetchComments(collaboration.projectId)
+            // ✅ FIX: Using renamed method for clarity (ensure this exists in AuthViewModel)
+            authViewModel.fetchHubComments(collaboration.projectId)
         } else {
             authViewModel.clearCollaborationMembers()
         }
@@ -88,7 +87,8 @@ fun CollaborationDetailScreen(
                     onTextChange = { commentText = it },
                     onSend = {
                         if (commentText.isNotBlank()) {
-                            authViewModel.addComment(
+                            // ✅ FIX: Using renamed method
+                            authViewModel.addHubComment(
                                 projectId = collaboration.projectId,
                                 text = commentText,
                                 user = currentUser
@@ -195,7 +195,7 @@ fun CollaborationDetailScreen(
                                 )
                             }
 
-                            Divider(Modifier.padding(vertical = 16.dp))
+                            HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
                             // Admin Actions
                             val isOwner = currentUser?.userId == collaboration.projectOwnerId
@@ -289,6 +289,7 @@ fun CollaborationDetailScreen(
                         DiscussionItem(
                             name = comment.userName,
                             photoUrl = comment.userPhotoUrl,
+                            // ✅ FIX: Passing String timestamp to helper
                             time = formatCommentTime(comment.timestamp),
                             comment = comment.text,
                             isMe = comment.userId == currentUser?.userId
@@ -404,8 +405,15 @@ private fun DiscussionItem(
     }
 }
 
-private fun formatCommentTime(date: Date?): String {
-    if (date == null) return "Just now"
+// ✅ FIX: Updated to handle ISO String instead of Date
+private fun formatCommentTime(dateString: String?): String {
+    if (dateString == null) return "Just now"
+
+    // Parse Supabase ISO 8601 string
+    val date = try {
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(dateString)
+    } catch (e: Exception) { null } ?: return "Now"
+
     val diff = System.currentTimeMillis() - date.time
     return when {
         diff < 60000 -> "Now"
